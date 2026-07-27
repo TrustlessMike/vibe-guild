@@ -1,0 +1,11 @@
+# Content-hashed bundle files: a change always arrives under a new name, so they
+# can be cached permanently. Workers' _headers does not honour `:placeholder`
+# segments the way Pages does, so each submission's assets/ folder is listed
+# explicitly.
+#
+# Models are deliberately NOT cached this way. They sit at stable paths, so a
+# long max-age could pair a returning player's stale model with freshly deployed
+# code that expects the new one. Revalidation costs one round trip against an
+# etag and keeps code and art in step.
+/art-of-battle/assets/*
+  Cache-Control: public, max-age=31536000, immutable
