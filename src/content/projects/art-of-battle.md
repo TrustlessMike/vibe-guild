@@ -8,6 +8,7 @@ tags: [three-js, melee, first-person, procedural]
 play:
   bundle: art-of-battle
   aspect: 16 / 9
+source: https://github.com/TrustlessMike/art-of-battle
 license: MIT
 featured: true
 ---
