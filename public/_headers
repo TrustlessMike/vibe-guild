@@ -1,11 +1,16 @@
 # The Guild embeds third-party submissions, so it is worth being explicit about
 # what this origin will and will not do.
 #
-# `frame-src` pins framing to the apps origin: the one iframe on the site is the
-# only frame that should ever load, and anything injected pointing elsewhere is
-# refused. `frame-ancestors 'none'` is the mirror of that — the Guild itself is
-# never to be embedded in someone else's page.
+# `frame-src` allows the apps origin plus any https: host, because `play.url` is
+# a documented way to submit — a work hosted elsewhere and embedded here. Pinning
+# this to the apps origin alone silently broke that path: the frame was refused
+# and the page showed an empty box with nothing in the console to explain it.
+# Allowing https: still refuses the schemes that actually matter, `javascript:`
+# and `data:`, which is where an iframe src can escape into this origin.
+#
+# `frame-ancestors 'none'` is the mirror of frame-src — the Guild itself is never
+# to be embedded in someone else's page.
 /*
   X-Content-Type-Options: nosniff
   Referrer-Policy: no-referrer
-  Content-Security-Policy: frame-src https://vibe-guild-apps.moneytalkwithmalik.workers.dev; frame-ancestors 'none'; base-uri 'none'; object-src 'none'
+  Content-Security-Policy: frame-src https: https://vibe-guild-apps.moneytalkwithmalik.workers.dev; frame-ancestors 'none'; base-uri 'none'; object-src 'none'

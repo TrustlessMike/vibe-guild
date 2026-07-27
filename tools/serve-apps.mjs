@@ -47,7 +47,16 @@ const TYPES = {
 createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   // Resolve inside ROOT and verify — never let ../ escape the apps folder.
-  let path = resolve(join(ROOT, normalize(decodeURIComponent(url.pathname))));
+  // decodeURIComponent throws on a malformed escape like `%zz`, and an
+  // uncaught throw in a request handler takes the whole dev server down —
+  // one stray link would end the session for every app being served.
+  let path;
+  try {
+    path = resolve(join(ROOT, normalize(decodeURIComponent(url.pathname))));
+  } catch {
+    res.writeHead(400).end('Bad request');
+    return;
+  }
   if (!path.startsWith(ROOT)) {
     res.writeHead(403).end('Forbidden');
     return;
