@@ -1,0 +1,55 @@
+---
+import { getCollection } from 'astro:content';
+import Hall from '../../layouts/Hall.astro';
+import Crest from '../../components/Crest.astro';
+import { rankFor } from '../../lib/crest';
+
+const creators = await getCollection('creators');
+const projects = await getCollection('projects');
+
+const roster = creators
+  .map((c) => ({
+    c,
+    n: projects.filter((p) => p.data.by.some((r: any) => r.id === c.id)).length,
+  }))
+  .sort((a, b) => b.n - a.n || a.c.data.name.localeCompare(b.c.data.name));
+---
+
+<Hall title="The Roster">
+  <section class="masthead rise">
+    <p class="mark">Everyone who has posted to the board</p>
+    <h1>The Roster</h1>
+    <p class="lede">
+      Rank is earned by posting, not granted. Every member's arms are generated
+      from their handle — no two are alike, and nobody has to draw anything.
+    </p>
+  </section>
+
+  <ul class="roll">
+    {roster.map(({ c, n }) => (
+      <li class="roll__item">
+        <a class="plaque" href={`/creators/${c.id}`}>
+          <Crest handle={c.id} size={72} overrides={c.data.crest ?? {}} title={false} />
+          <div class="plaque__who">
+            <strong>{c.data.name}</strong>
+            {c.data.title && <span class="plaque__role">{c.data.title}</span>}
+            <span class="rank">{rankFor(n)} · {n === 1 ? '1 commission' : `${n} commissions`}</span>
+          </div>
+        </a>
+      </li>
+    ))}
+  </ul>
+
+  {roster.length === 0 && (
+    <p class="lede">No members yet. The first one sets the tone.</p>
+  )}
+</Hall>
+
+<style>
+  .roll {
+    list-style: none; padding: 0; margin: 0;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 1rem;
+  }
+  .roll__item .plaque { padding: 1.1rem 1.2rem; gap: 1.1rem; }
+</style>

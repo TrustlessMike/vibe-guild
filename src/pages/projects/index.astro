@@ -1,0 +1,102 @@
+---
+import { getCollection } from 'astro:content';
+import Hall from '../../layouts/Hall.astro';
+import Notice from '../../components/Notice.astro';
+
+const projects = (await getCollection('projects')).sort(
+  (a, b) => b.data.posted.valueOf() - a.data.posted.valueOf(),
+);
+
+const tags = [...new Set(projects.flatMap((p) => p.data.tags))].sort();
+const counts = {
+  all: projects.length,
+  game: projects.filter((p) => p.data.kind === 'game').length,
+  app: projects.filter((p) => p.data.kind === 'app').length,
+};
+---
+
+<Hall title="The Board">
+  <section class="top rise">
+    <p class="mark">Every commission, newest first</p>
+    <h1>The Board</h1>
+    <p class="lede">
+      Everything here runs in your browser. Nothing to install, nothing to sign
+      up for.
+    </p>
+
+    <div class="filters" data-filters>
+      <div class="filters__row" role="group" aria-label="Filter by kind">
+        <button class="chip" data-kind="all" aria-pressed="true">All · {counts.all}</button>
+        <button class="chip" data-kind="game" aria-pressed="false">Games · {counts.game}</button>
+        <button class="chip" data-kind="app" aria-pressed="false">Apps · {counts.app}</button>
+      </div>
+      {tags.length > 0 && (
+        <div class="filters__row" role="group" aria-label="Filter by tag">
+          {tags.map((t) => (
+            <button class="chip" data-tag={t} aria-pressed="false">{t}</button>
+          ))}
+        </div>
+      )}
+    </div>
+  </section>
+
+  <div class="board" data-board>
+    {projects.map((p) => (
+      <div data-kind={p.data.kind} data-tags={p.data.tags.join('|')} class="slot">
+        <Notice project={p} />
+      </div>
+    ))}
+  </div>
+
+  <p class="empty" data-empty hidden>Nothing on the board matches that.</p>
+</Hall>
+
+<script>
+  const board = document.querySelector('[data-board]');
+  const empty = document.querySelector('[data-empty]');
+  const kindBtns = [...document.querySelectorAll('[data-kind]')];
+  const tagBtns = [...document.querySelectorAll('[data-tag]')];
+
+  let kind = 'all';
+  let tag: string | null = new URLSearchParams(location.search).get('tag');
+
+  function paint() {
+    let shown = 0;
+    for (const slot of board?.querySelectorAll('.slot') ?? []) {
+      const el = slot as HTMLElement;
+      const okKind = kind === 'all' || el.dataset.kind === kind;
+      const okTag = !tag || (el.dataset.tags || '').split('|').includes(tag);
+      const show = okKind && okTag;
+      el.hidden = !show;
+      if (show) shown++;
+    }
+    if (empty) (empty as HTMLElement).hidden = shown > 0;
+    for (const b of kindBtns) b.setAttribute('aria-pressed', String(b.getAttribute('data-kind') === kind));
+    for (const b of tagBtns) b.setAttribute('aria-pressed', String(b.getAttribute('data-tag') === tag));
+  }
+
+  for (const b of kindBtns) {
+    b.addEventListener('click', () => { kind = b.getAttribute('data-kind')!; paint(); });
+  }
+  for (const b of tagBtns) {
+    b.addEventListener('click', () => {
+      const t = b.getAttribute('data-tag')!;
+      tag = tag === t ? null : t;                 // clicking an active tag clears it
+      const url = new URL(location.href);
+      tag ? url.searchParams.set('tag', tag) : url.searchParams.delete('tag');
+      history.replaceState({}, '', url);
+      paint();
+    });
+  }
+  paint();
+</script>
+
+<style>
+  .top { padding: clamp(2rem, 6vw, 4rem) 0 2rem; }
+  .top > * + * { margin-top: 0.7rem; }
+  .filters { display: grid; gap: 0.6rem; margin-top: 1.8rem; }
+  .filters__row { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+  .filters__row .chip { cursor: pointer; font-family: var(--mark); }
+  .slot[hidden] { display: none; }
+  .empty { color: rgba(242, 229, 203, 0.6); padding: 2rem 0; }
+</style>

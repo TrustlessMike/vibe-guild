@@ -1,0 +1,18 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The playable bundles, served from their own origin.
+  //
+  // This is a whole separate Worker purely so it gets a different hostname to
+  // the Guild. Submitted work runs in an iframe with `allow-same-origin`, so it
+  // keeps real localStorage and ES modules — but "same origin" resolves to
+  // *this* origin, which holds nothing but static bundles. It cannot reach the
+  // Guild's DOM, cookies or storage.
+  "name": "vibe-guild-apps",
+  "account_id": "19ab5582f795f48dc28ecb9f41d7c7d1",
+  "compatibility_date": "2026-07-26",
+  "assets": {
+    "directory": "./apps",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

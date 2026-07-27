@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // The Guild itself. Deliberately a different Worker — and so a different
+  // hostname — to `vibe-guild-apps`, which is what makes the iframe sandbox
+  // meaningful. See wrangler.apps.jsonc.
+  "name": "vibe-guild",
+  "account_id": "19ab5582f795f48dc28ecb9f41d7c7d1",
+  "compatibility_date": "2026-07-26",
+  "assets": {
+    "directory": "./dist",
+    "html_handling": "auto-trailing-slash",
+    "not_found_handling": "404-page"
+  }
+}

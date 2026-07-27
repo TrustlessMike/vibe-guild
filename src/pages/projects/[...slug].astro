@@ -1,0 +1,192 @@
+---
+import { Image } from 'astro:assets';
+import { getCollection, getEntry, render } from 'astro:content';
+import Hall from '../../layouts/Hall.astro';
+import Crest from '../../components/Crest.astro';
+
+export async function getStaticPaths() {
+  const projects = await getCollection('projects');
+  return projects.map((p) => ({ params: { slug: p.id }, props: { project: p } }));
+}
+
+const { project } = Astro.props;
+const d = project.data;
+const { Content } = await render(project);
+
+const authors = await Promise.all(d.by.map((ref: any) => getEntry(ref)));
+
+/**
+ * Submitted work is served from its own origin (see tools/serve-apps.mjs).
+ * That is what lets the frame carry `allow-same-origin` safely: "same origin"
+ * there means the app's, not the Guild's, so the app keeps its own storage and
+ * loads its own modules while still being unable to reach anything of ours.
+ * With no separate origin configured we fall back to same-origin serving and
+ * drop that permission, which is safe but costs the app its storage.
+ */
+const appsOrigin = import.meta.env.PUBLIC_APPS_ORIGIN ?? '';
+const isolated = appsOrigin !== '';
+// The apps host is rooted at the apps/ folder itself, so the `/apps` prefix is
+// only needed in the fallback where this site serves them. Point at the
+// directory rather than index.html: both the local apps server and Cloudflare's
+// asset handler resolve it, and naming the file earns a 307 redirect first.
+const src = d.play.bundle
+  ? `${appsOrigin}${isolated ? '' : '/apps'}/${d.play.bundle}/`
+  : d.play.url;
+const sandbox = [
+  'allow-scripts',
+  'allow-pointer-lock',
+  'allow-popups',
+  'allow-downloads',
+  ...(isolated || d.play.url ? ['allow-same-origin'] : []),
+].join(' ');
+const posted = d.posted.toLocaleDateString('en-GB', {
+  day: 'numeric', month: 'long', year: 'numeric',
+});
+
+---
+
+<Hall title={d.title} description={d.tagline}>
+  <article class="commission">
+    <header class="head">
+      <div class="head__text">
+        <p class="mark">{d.kind === 'game' ? 'A game' : 'An app'} · posted {posted}</p>
+        <h1>{d.title}</h1>
+        <p class="lede">{d.tagline}</p>
+
+        <div class="by">
+          {authors.map((a: any) => (
+            <a class="by__one" href={`/creators/${a.id}`}>
+              <Crest handle={a.id} size={34} title={false} />
+              <span>{a.data.name}</span>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      <div class="head__meta">
+        {d.tags.length > 0 && (
+          <div class="tags">
+            {d.tags.map((t: string) => (
+              <a class="chip" href={`/projects?tag=${encodeURIComponent(t)}`}>{t}</a>
+            ))}
+          </div>
+        )}
+        <div class="acts">
+          {d.source && <a class="btn btn--ghost" href={d.source}>Source ↗</a>}
+          <span class="mark">{d.license}</span>
+        </div>
+      </div>
+    </header>
+
+    <!--
+      Third-party code runs here. `allow-same-origin` is granted only because
+      the bundle is served from a different host: it resolves to the apps
+      origin, which holds nothing but static submissions, so the frame keeps
+      real storage and module loading while still being unable to reach this
+      page. Without a separate origin configured the permission is dropped
+      instead — safe, but the submission loses its storage.
+    -->
+    <section class="stage frame" style={`--aspect:${d.play.aspect}`}>
+      <iframe
+        src={src}
+        title={`${d.title} — playable`}
+        sandbox={sandbox}
+        allow="autoplay; gamepad; fullscreen; xr-spatial-tracking"
+        loading="lazy"
+        referrerpolicy="no-referrer"
+      ></iframe>
+      <div class="stage__bar">
+        <span class="mark">
+          {isolated ? "Sandboxed on its own origin · it cannot touch the Guild"
+            : "Sandboxed · run npm run apps to give it its own origin"}
+        </span>
+        {d.play.fullscreen && (
+          <button class="chip" type="button" data-fullscreen>Fullscreen</button>
+        )}
+      </div>
+    </section>
+
+    <div class="sheet leaf illuminate prose">
+      <Content />
+    </div>
+
+    {d.shots.length > 0 && (
+      <section class="shots">
+        {d.shots.map((s: any) => (
+          <Image src={s} alt={`${d.title} screenshot`} width={900} height={560} loading="lazy" />
+        ))}
+      </section>
+    )}
+  </article>
+</Hall>
+
+<script>
+  document.querySelector('[data-fullscreen]')?.addEventListener('click', () => {
+    document.querySelector('.stage iframe')?.requestFullscreen?.();
+  });
+</script>
+
+<style>
+  .commission { padding: clamp(1.6rem, 5vw, 3.2rem) 0 0; }
+
+  .head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 1.6rem;
+    align-items: end;
+    margin-bottom: 1.8rem;
+  }
+  .head__text > * + * { margin-top: 0.7rem; }
+  .head__meta { display: grid; gap: 0.9rem; justify-items: end; }
+
+  .by { display: flex; flex-wrap: wrap; gap: 0.8rem; padding-top: 0.4rem; }
+  .by__one {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    text-decoration: none;
+    color: var(--vellum);
+    font-family: var(--carve);
+    font-size: 0.9rem;
+    letter-spacing: 0.04em;
+  }
+  .by__one:hover { color: var(--brass-lit); }
+
+  .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: flex-end; }
+  .acts { display: flex; align-items: center; gap: 0.9rem; }
+
+  .stage {
+    padding: 12px;
+    background:
+      radial-gradient(120% 90% at 50% -10%, rgba(255, 198, 112, 0.12), transparent 60%),
+      linear-gradient(180deg, #120c07, #0b0704);
+  }
+  .stage iframe {
+    display: block;
+    width: 100%;
+    aspect-ratio: var(--aspect, 16 / 9);
+    border: 0;
+    background: #000;
+  }
+  .stage__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.6rem 0.2rem 0.1rem;
+  }
+  .stage__bar .chip { cursor: pointer; font-family: var(--mark); }
+
+  .prose { margin: 2.6rem 0; transform: rotate(-0.25deg); }
+  .prose :global(ul) { padding-left: 1.15rem; }
+  .prose :global(li) { margin-bottom: 0.38rem; color: var(--ink-soft); }
+
+  .shots { display: grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+  .shots :global(img) { border: 1px solid rgba(194, 145, 63, 0.24); }
+
+  @media (max-width: 760px) {
+    .head { grid-template-columns: 1fr; align-items: start; }
+    .head__meta { justify-items: start; }
+    .tags { justify-content: flex-start; }
+  }
+</style>

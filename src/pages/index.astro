@@ -1,0 +1,195 @@
+---
+import { getCollection } from 'astro:content';
+import Hall from '../layouts/Hall.astro';
+import Notice from '../components/Notice.astro';
+import Crest from '../components/Crest.astro';
+import { rankFor } from '../lib/crest';
+
+const projects = (await getCollection('projects')).sort(
+  (a, b) => b.data.posted.valueOf() - a.data.posted.valueOf(),
+);
+const creators = await getCollection('creators');
+
+const featured = projects.filter((p) => p.data.featured);
+const board = (featured.length ? featured : projects).slice(0, 6);
+
+const countFor = (handle: string) =>
+  projects.filter((p) => p.data.by.some((r: any) => r.id === handle)).length;
+
+const roster = creators
+  .map((c) => ({ c, n: countFor(c.id) }))
+  .sort((a, b) => b.n - a.n)
+  .slice(0, 6);
+---
+
+<Hall title="A hall for people who make things">
+  <section class="hero">
+    <div class="hero__charter sheet rise">
+      <span class="pin" aria-hidden="true"></span>
+      <p class="mark">Est. by whoever showed up first</p>
+      <h1>The <span class="hero__accent">Vibe</span> Guild</h1>
+      <p class="lede">
+        A hall for people who make things. Members post their games and apps to
+        the board, and anyone can play them right here — no store, no launcher,
+        no account.
+      </p>
+      <div class="hero__acts">
+        <a class="btn" href="/projects">Enter the hall</a>
+        <a class="btn btn--ghost" href="/submit">Post a commission</a>
+      </div>
+      <dl class="tally">
+        <div><dt class="mark">Commissions</dt><dd>{projects.length}</dd></div>
+        <div><dt class="mark">Members</dt><dd>{creators.length}</dd></div>
+        <div><dt class="mark">Cut taken</dt><dd>0%</dd></div>
+      </dl>
+    </div>
+
+    <aside class="hero__hangings" aria-hidden="true">
+      <div class="rail"></div>
+      <div class="banners">
+        <div class="banner banner--a">
+          <Crest handle="the-vibe-guild" size={104} title={false} />
+          <p class="banner__motto">Make</p>
+        </div>
+        <div class="banner banner--b">
+          <Crest handle="guild-of-makers" size={88} title={false} />
+          <p class="banner__motto">Post</p>
+        </div>
+        <div class="banner banner--c">
+          <Crest handle="hall-of-commissions" size={88} title={false} />
+          <p class="banner__motto">Play</p>
+        </div>
+      </div>
+    </aside>
+  </section>
+
+  <div class="rule"><span></span></div>
+
+  <section>
+    <header class="sec">
+      <h2>On the board</h2>
+      <a class="mark sec__more" href="/projects">See all {projects.length} →</a>
+    </header>
+    {board.length ? (
+      <div class="board">
+        {board.map((p) => <Notice project={p} />)}
+      </div>
+    ) : (
+      <p class="lede">The board is bare. Be the first to pin something to it.</p>
+    )}
+  </section>
+
+  <div class="rule"><span></span></div>
+
+  <section>
+    <header class="sec">
+      <h2>The roster</h2>
+      <a class="mark sec__more" href="/creators">Every member →</a>
+    </header>
+    <ul class="roster">
+      {roster.map(({ c, n }) => (
+        <li>
+          <a class="plaque" href={`/creators/${c.id}`}>
+            <Crest handle={c.id} size={54} title={false} />
+            <span class="plaque__who">
+              <strong>{c.data.name}</strong>
+              <span class="rank">{rankFor(n)}</span>
+            </span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
+</Hall>
+
+<style>
+  .hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: clamp(1.5rem, 4vw, 3.4rem);
+    align-items: center;
+    padding: clamp(2.2rem, 5vw, 4rem) 0 clamp(2rem, 5vw, 3.4rem);
+  }
+  .hero__charter { padding: clamp(1.8rem, 4vw, 3rem) clamp(1.6rem, 4vw, 3rem) clamp(1.7rem, 4vw, 2.6rem); transform: rotate(-0.5deg); }
+  .hero__charter > * + * { margin-top: 1.05rem; }
+  /* Smaller than the global display size: at 5rem the charter towered over
+     the banners and left the right of the wall bare. */
+  .hero h1 { font-size: clamp(2.2rem, 1.5rem + 3vw, 4.1rem); letter-spacing: 0.015em; }
+  .hero__accent {
+    color: #8a2f1d;
+    font-style: italic;
+  }
+  .hero__acts { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 1.8rem; }
+
+  .tally {
+    display: flex; gap: clamp(1.4rem, 4vw, 3rem);
+    margin: 2.2rem 0 0; padding-top: 1.4rem;
+    border-top: 1px solid rgba(122, 88, 44, 0.34);
+  }
+  .tally div { display: grid; gap: 0.2rem; }
+  .tally dt { margin: 0; }
+  .tally dd {
+    margin: 0; font-family: var(--carve); font-size: 1.75rem;
+    font-weight: 700; color: var(--ink);
+  }
+
+  /* Three banners on an iron rail, stirring in the draught. */
+  .hero__hangings { padding-top: 1.4rem; }
+  .rail {
+    height: 9px; border-radius: 5px;
+    background: linear-gradient(180deg, #6a625a, #3d3831 45%, #17130f);
+    box-shadow: 0 5px 14px rgba(0,0,0,.75), 0 1px 0 rgba(255,235,205,.28) inset;
+  }
+  .banners { display: flex; justify-content: center; gap: clamp(0.4rem, 1.4vw, 1rem); align-items: flex-start; }
+  .banner {
+    display: grid; justify-items: center; gap: 0.7rem;
+    padding: 1.9rem 1rem 5.2rem;
+    clip-path: polygon(0 0, 100% 0, 100% 90%, 50% 100%, 0 90%);
+    box-shadow: var(--shadow-hang), inset 0 2px 0 rgba(255,210,180,.3), inset 0 -40px 50px -30px rgba(0,0,0,.6);
+    transform-origin: top center;
+    animation: sway 11s ease-in-out infinite;
+  }
+  .banner--a {
+    width: clamp(132px, 35%, 196px);
+    background: linear-gradient(172deg, #a63a29 0%, #7e2a20 55%, #4d150d 100%);
+  }
+  .banner--b {
+    width: clamp(112px, 29%, 162px); margin-top: 1.6rem;
+    background: linear-gradient(172deg, #2f5f8c 0%, #22466a 60%, #14283e 100%);
+    animation-delay: -3.5s;
+  }
+  .banner--c {
+    width: clamp(112px, 29%, 162px); margin-top: 3rem;
+    background: linear-gradient(172deg, #3f7a54 0%, #2c5a3c 60%, #17321f 100%);
+    animation-delay: -7s;
+  }
+  .banner__motto {
+    margin: 0; font-family: var(--carve); font-size: 0.7rem;
+    letter-spacing: 0.26em; text-transform: uppercase;
+    color: rgba(255, 236, 212, 0.9); text-shadow: 0 2px 3px rgba(0,0,0,.6);
+  }
+  @keyframes sway {
+    0%, 100% { transform: rotate(-1deg); }
+    50% { transform: rotate(1deg); }
+  }
+
+  .sec {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .sec__more { text-decoration: none; white-space: nowrap; }
+
+  .roster {
+    list-style: none; margin: 0; padding: 0;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 0.9rem;
+  }
+
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero__hangings { order: -1; }
+  }
+</style>

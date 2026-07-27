@@ -1,0 +1,61 @@
+---
+import { Image } from 'astro:assets';
+import { getEntry } from 'astro:content';
+import Crest from './Crest.astro';
+import { CHARGES, blazon } from '../lib/crest';
+
+interface Props {
+  project: any;
+}
+const { project } = Astro.props;
+const d = project.data;
+
+const authors = await Promise.all(
+  d.by.map(async (ref: any) => (await getEntry(ref))?.data.name ?? ref.id),
+);
+const lead = d.by[0].id;
+
+// The seal carries the maker's own charge, pressed into the wax — the same
+// device that appears on their arms, so a notice is signed at a glance.
+const stamp = CHARGES[blazon(lead).charge];
+
+const posted = d.posted.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+---
+
+<a class="notice" href={`/projects/${project.id}`}>
+  <span class="pin" aria-hidden="true"></span>
+
+  <span class={`wax ${d.kind === 'app' ? 'wax--app' : ''}`} aria-hidden="true">
+    <span class="wax__blob"></span>
+    <span class="wax__stamp">
+      <svg viewBox="0 0 100 116">
+        <g fill="rgba(60,12,6,.85)" color="rgba(60,12,6,.85)" transform="translate(0,4)">
+          <Fragment set:html={stamp} />
+        </g>
+      </svg>
+    </span>
+  </span>
+  <span class="visually-hidden">{d.kind}</span>
+
+  <div class="sheet">
+    {d.cover ? (
+      <div class="notice__plate">
+        <Image src={d.cover} alt="" width={640} height={400} loading="lazy" />
+      </div>
+    ) : (
+      <div class="notice__plate notice__plate--arms">
+        <Crest handle={lead} size={84} title={false} />
+      </div>
+    )}
+
+    <div class="notice__body">
+      <h3 class="notice__title">{d.title}</h3>
+      <p class="notice__tagline">{d.tagline}</p>
+      <div class="notice__foot">
+        <span>{authors.join(' & ')}</span>
+        <span aria-hidden="true">·</span>
+        <span>{posted}</span>
+      </div>
+    </div>
+  </div>
+</a>

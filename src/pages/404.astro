@@ -1,0 +1,48 @@
+---
+/**
+ * Cloudflare's asset handler is configured with `not_found_handling: "404-page"`,
+ * which serves this file's build output for anything unmatched. Without it an
+ * unknown URL returns an empty body.
+ */
+import Hall from '../layouts/Hall.astro';
+---
+
+<Hall title="Not on the board" description="No such commission.">
+  <section class="lost">
+    <div class="sheet leaf">
+      <p class="mark">Notice</p>
+      <h1>No such commission</h1>
+      <p>
+        Nothing is posted at this address. It may have been taken down, or the
+        board may never have carried it at all.
+      </p>
+      <div class="lost__acts">
+        <a class="btn" href="/projects">See the board</a>
+        <a class="btn btn--ghost" href="/">Back to the hall</a>
+      </div>
+    </div>
+  </section>
+</Hall>
+
+<style>
+  .lost {
+    display: grid;
+    place-items: center;
+    min-height: 58vh;
+    padding: clamp(2rem, 6vw, 4rem) 0;
+  }
+  .lost .sheet {
+    max-width: 34rem;
+    text-align: center;
+    transform: rotate(-0.4deg);
+  }
+  .lost h1 { margin: 0.5rem 0 0.9rem; }
+  .lost p { color: var(--ink-soft); }
+  .lost__acts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.7rem;
+    justify-content: center;
+    margin-top: 1.6rem;
+  }
+</style>

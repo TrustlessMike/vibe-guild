@@ -1,0 +1,197 @@
+---
+import Hall from '../layouts/Hall.astro';
+
+const creatorFile = `---
+name: Your Name
+title: Maker of small strange things   # optional
+joined: 2026-07-24
+location: Anywhere                     # optional
+bio: >
+  A sentence or three. Say whatever you like — the Guild does not
+  prescribe what a profile should contain.
+links:
+  - { label: GitHub,  url: https://github.com/yourhandle }
+  - { label: Website, url: https://your.site }
+  - { label: Bluesky, url: https://bsky.app/profile/you }
+---
+
+Anything below the dashes is your page. Markdown. Write as much or as
+little as you want.`;
+
+const projectFile = `---
+title: Your Thing
+kind: game            # or: app
+tagline: One line, under 140 characters.
+by: [yourhandle]      # matches src/content/creators/yourhandle.md
+posted: 2026-07-24
+tags: [three-js, roguelike]
+cover: ../../assets/your-thing/cover.png    # optional
+play:
+  bundle: your-thing  # the folder you added under apps/
+  aspect: 16 / 9
+source: https://github.com/you/your-thing   # optional
+license: MIT
+---
+
+## What it is
+
+Markdown. Tell people what they are looking at.`;
+---
+
+<Hall title="Post a Commission">
+  <section class="masthead rise">
+    <p class="mark">How things get onto the board</p>
+    <h1>Post a Commission</h1>
+    <p class="lede">
+      There is no sign-up, because there are no accounts. The Guild's roster and
+      its board are just files in a public repository — you add yours with a pull
+      request, and when it is merged the hall rebuilds itself.
+    </p>
+  </section>
+
+  <ol class="steps">
+    <li class="step sheet">
+      <span class="pin" aria-hidden="true"></span>
+      <span class="step__n">I</span>
+      <div>
+        <h2>Fork the hall</h2>
+        <p>
+          Fork <a href="https://github.com/TrustlessMike/vibe-guild">the repository</a>,
+          then <code>npm install &amp;&amp; npm run dev</code> to see your changes
+          locally before you send them.
+        </p>
+      </div>
+    </li>
+
+    <li class="step sheet">
+      <span class="pin" aria-hidden="true"></span>
+      <span class="step__n">II</span>
+      <div>
+        <h2>Claim your arms</h2>
+        <p>
+          Add <code>src/content/creators/&lt;yourhandle&gt;.md</code>. Your handle is
+          the filename, and it is also the seed for your coat of arms — you get a
+          unique one automatically, so there is no avatar to upload.
+        </p>
+        <pre><code>{creatorFile}</code></pre>
+      </div>
+    </li>
+
+    <li class="step sheet">
+      <span class="pin" aria-hidden="true"></span>
+      <span class="step__n">III</span>
+      <div>
+        <h2>Bring the thing itself</h2>
+        <p>
+          Build your project to static files and commit the output as
+          <code>apps/&lt;slug&gt;/</code>, with an <code>index.html</code> at its
+          root. It is served from a separate origin and framed with
+          <code>allow-scripts</code> and <code>allow-same-origin</code>.
+        </p>
+        <ul class="rules">
+          <li>Keep it under <strong>25&nbsp;MB</strong>. Compress your textures and audio.</li>
+          <li>Use <strong>relative paths</strong> — your app is served from a subfolder.</li>
+          <li>
+            You keep your own <code>localStorage</code> — saves work. You cannot
+            reach the Guild's page; the separate origin is what buys you both.
+          </li>
+          <li>
+            Anything needing a server of its own should use <code>play.url</code>
+            to embed from where it already lives.
+          </li>
+          <li>It must be yours to publish, and it must not be hostile to whoever runs it.</li>
+        </ul>
+      </div>
+    </li>
+
+    <li class="step sheet">
+      <span class="pin" aria-hidden="true"></span>
+      <span class="step__n">IV</span>
+      <div>
+        <h2>Pin it to the board</h2>
+        <p>Add <code>src/content/projects/&lt;slug&gt;.md</code>:</p>
+        <pre><code>{projectFile}</code></pre>
+        <p class="note">
+          The schema is checked at build time, so a malformed submission fails
+          in CI rather than landing broken on the board. If it builds, it works.
+        </p>
+      </div>
+    </li>
+
+    <li class="step sheet">
+      <span class="pin" aria-hidden="true"></span>
+      <span class="step__n">V</span>
+      <div>
+        <h2>Open the pull request</h2>
+        <p>
+          That is the whole process. Merged means published. Take it down again
+          whenever you like — it is your work, and the Guild claims no part of it.
+        </p>
+        <a class="btn" href="https://github.com/TrustlessMike/vibe-guild/fork">Fork and begin</a>
+      </div>
+    </li>
+  </ol>
+</Hall>
+
+<style>
+  .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: clamp(1.4rem, 3vw, 2.2rem); }
+  .step {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 1.4rem;
+    padding: clamp(1.4rem, 3vw, 2.1rem) clamp(1.4rem, 3vw, 2.2rem);
+  }
+  .step:nth-child(odd) { transform: rotate(-0.3deg); }
+  .step:nth-child(even) { transform: rotate(0.35deg); }
+  .step__n {
+    font-family: var(--carve);
+    font-size: 1.7rem;
+    font-weight: 900;
+    color: #8a2f1d;
+    line-height: 1;
+    padding-top: 0.1rem;
+    min-width: 2ch;
+  }
+  .step h2 { margin-bottom: 0.55rem; }
+  .step p { color: var(--ink-soft); }
+
+  .rules { padding-left: 1.15rem; color: var(--ink-soft); }
+  .rules li { margin-bottom: 0.42rem; }
+  .rules strong { color: var(--ink); }
+
+  pre {
+    margin: 0.9rem 0 0;
+    padding: 1rem 1.1rem;
+    overflow-x: auto;
+    background: rgba(30, 21, 13, 0.94);
+    border-left: 3px solid var(--brass);
+    box-shadow: 0 2px 12px rgba(60, 40, 16, 0.4) inset;
+  }
+  pre code {
+    font-family: var(--mark);
+    font-size: 0.78rem;
+    line-height: 1.7;
+    color: rgba(244, 232, 207, 0.9);
+    background: none;
+    padding: 0;
+    white-space: pre;
+  }
+  code {
+    font-family: var(--mark);
+    font-size: 0.86em;
+    background: rgba(122, 88, 44, 0.16);
+    color: #6b3a12;
+    padding: 0.1em 0.36em;
+  }
+  .note {
+    margin-top: 0.95rem;
+    font-size: 0.91rem;
+    color: var(--ink-faint);
+    border-left: 2px solid rgba(138, 47, 29, 0.5);
+    padding-left: 0.95rem;
+    font-style: italic;
+  }
+  @media (max-width: 620px) {
+    .step { grid-template-columns: 1fr; gap: 0.5rem; }
+  }
+</style>

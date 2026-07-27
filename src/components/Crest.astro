@@ -1,0 +1,85 @@
+---
+import { CHARGES, blazon, divisionPaths } from '../lib/crest';
+
+interface Props {
+  handle: string;
+  size?: number;
+  overrides?: { field?: string; charge?: string; division?: string };
+  title?: boolean;
+}
+
+const { handle, size = 64, overrides = {}, title = true } = Astro.props;
+const arms = blazon(handle, overrides);
+const halves = divisionPaths(arms.division);
+const id = `crest-${handle.replace(/[^a-z0-9]/gi, '')}`;
+const shield = 'M3 3 H97 V56 C97 87 73 105 50 113 C27 105 3 87 3 56 Z';
+---
+
+<svg
+  class="crest"
+  viewBox="0 0 100 116"
+  width={size}
+  height={size * 1.16}
+  role="img"
+  aria-label={title ? `Arms of ${handle}: ${arms.text}` : undefined}
+  aria-hidden={title ? undefined : 'true'}
+>
+  <defs>
+    <clipPath id={id}><path d={shield} /></clipPath>
+    <linearGradient id={`${id}-sheen`} x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0%" stop-color="#fff" stop-opacity="0.22" />
+      <stop offset="45%" stop-color="#fff" stop-opacity="0.04" />
+      <stop offset="100%" stop-color="#000" stop-opacity="0.26" />
+    </linearGradient>
+  </defs>
+
+  <g clip-path={`url(#${id})`}>
+    <rect width="100" height="116" fill={arms.field.hex} />
+    {halves && <path d={halves[1]} fill={arms.second.hex} />}
+
+    <!--
+      A charge laid across a division will otherwise vanish wherever it meets a
+      half of its own tincture. Outlining it keeps it legible against anything
+      without breaking the tincture rule, since an outline is not a field.
+    -->
+    <g
+      fill={arms.chargeTincture.hex}
+      color={arms.chargeTincture.hex}
+      stroke="#171009"
+      stroke-width={arms.division === 'plain' ? 1.2 : 3}
+      stroke-linejoin="round"
+      style="paint-order: stroke fill"
+      opacity="0.98"
+    >
+      <Fragment set:html={CHARGES[arms.charge]} />
+    </g>
+
+    {arms.bordure && (
+      <path
+        d={shield}
+        fill="none"
+        stroke="#c2913f"
+        stroke-width="9"
+        opacity="0.9"
+      />
+    )}
+    <rect width="100" height="116" fill={`url(#${id}-sheen)`} />
+  </g>
+
+  <path
+    d={shield}
+    fill="none"
+    stroke="#c2913f"
+    stroke-width="3"
+    stroke-linejoin="round"
+    opacity="0.85"
+  />
+</svg>
+
+<style>
+  .crest {
+    display: block;
+    filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.55));
+    flex: none;
+  }
+</style>

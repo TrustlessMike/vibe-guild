@@ -1,0 +1,24 @@
+{
+  "name": "vibe-guild",
+  "version": "1.0.0",
+  "description": "A guild hall for people who make things — games and apps by independent creators, playable in the browser.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "node tools/serve-apps.mjs & astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "apps": "node tools/serve-apps.mjs",
+    "deploy:apps": "wrangler deploy -c wrangler.apps.jsonc",
+    "deploy:site": "astro build && wrangler deploy",
+    "deploy": "npm run deploy:apps && npm run deploy:site"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "astro": "^7.1.3"
+  },
+  "private": true
+}

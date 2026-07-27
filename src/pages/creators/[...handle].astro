@@ -1,0 +1,124 @@
+---
+import { getCollection, render } from 'astro:content';
+import Hall from '../../layouts/Hall.astro';
+import Crest from '../../components/Crest.astro';
+import Notice from '../../components/Notice.astro';
+import { blazon, rankFor } from '../../lib/crest';
+
+export async function getStaticPaths() {
+  const creators = await getCollection('creators');
+  const projects = await getCollection('projects');
+  return creators.map((c) => ({
+    params: { handle: c.id },
+    props: {
+      creator: c,
+      works: projects
+        .filter((p) => p.data.by.some((r: any) => r.id === c.id))
+        .sort((a, b) => b.data.posted.valueOf() - a.data.posted.valueOf()),
+    },
+  }));
+}
+
+const { creator, works } = Astro.props;
+const d = creator.data;
+const { Content } = await render(creator);
+
+const arms = blazon(creator.id, d.crest ?? {});
+const rank = rankFor(works.length);
+const joined = d.joined.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+---
+
+<Hall title={d.name} description={d.bio ?? `${d.name} of The Vibe Guild`}>
+  <article class="member">
+    <header class="charter sheet rise">
+      <span class="pin" aria-hidden="true"></span>
+      <div class="charter__arms">
+        <Crest handle={creator.id} size={132} overrides={d.crest ?? {}} />
+      </div>
+
+      <div class="charter__text">
+        <p class="mark">{rank} · joined {joined}{d.location ? ` · ${d.location}` : ''}</p>
+        <h1>{d.name}</h1>
+        {d.title && <p class="charter__role">{d.title}</p>}
+        {d.bio && <p class="lede">{d.bio}</p>}
+
+        {d.links.length > 0 && (
+          <ul class="links">
+            {d.links.map((l: any) => (
+              <li><a class="chip" href={l.url} rel="me noopener">{l.label} ↗</a></li>
+            ))}
+          </ul>
+        )}
+      </div>
+
+      <p class="charter__blazon mark" title="The member's arms, generated from their handle">
+        {arms.text}
+      </p>
+    </header>
+
+    <div class="sheet leaf illuminate member__scroll"><Content /></div>
+
+    <div class="rule"><span></span></div>
+
+    <section>
+      <h2>{works.length === 1 ? 'One commission' : `${works.length} commissions`}</h2>
+      {works.length ? (
+        <div class="board" style="margin-top:1.4rem">
+          {works.map((p: any) => <Notice project={p} />)}
+        </div>
+      ) : (
+        <p class="lede">Nothing posted to the board yet.</p>
+      )}
+    </section>
+  </article>
+</Hall>
+
+<style>
+  .member { padding: clamp(1.6rem, 5vw, 3.2rem) 0 0; }
+
+  .charter {
+    max-width: 58rem;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: clamp(1.2rem, 4vw, 2.6rem);
+    align-items: center;
+    padding: clamp(1.6rem, 4vw, 2.6rem);
+    transform: rotate(-0.4deg);
+  }
+  .charter__text > * + * { margin-top: 0.6rem; }
+  .charter__role {
+    font-family: var(--carve);
+    letter-spacing: 0.08em;
+    color: #8a2f1d;
+    font-size: 1rem;
+    margin: 0;
+  }
+  /* The blazon, written under the arms the way a herald would record it. */
+  .charter__blazon {
+    grid-column: 1 / -1;
+    margin: 0.3rem 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(122, 88, 44, 0.36);
+    color: var(--ink-faint);
+    font-style: italic;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-family: var(--read);
+    font-size: 0.9rem;
+  }
+
+  .links { list-style: none; display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0; margin: 1.1rem 0 0; }
+  /* Chips on parchment need ink, not brass. */
+  .charter .chip {
+    border-color: rgba(122, 88, 44, 0.42);
+    background: rgba(122, 88, 44, 0.09);
+    color: #6b3a12;
+  }
+  .charter .chip:hover { background: rgba(122, 88, 44, 0.2); color: #241a10; }
+
+  .member__scroll { margin: 1.8rem 0 0; max-width: 58rem; transform: rotate(0.25deg); }
+
+  @media (max-width: 720px) {
+    .charter { grid-template-columns: 1fr; justify-items: start; }
+  }
+</style>

@@ -1,0 +1,72 @@
+---
+import Hall from '../layouts/Hall.astro';
+import Crest from '../components/Crest.astro';
+import { CHARGE_NAMES, DIVISIONS, blazon } from '../lib/crest';
+
+// A reference sheet for the generator: enough handles to see the whole range
+// at once, so a bad combination has nowhere to hide.
+const sample = [
+  'malik', 'ada', 'grim', 'nova', 'pixelwitch', 'orbital', 'runa', 'kestrel',
+  'foxglove', 'mono', 'harbour', 'sable', 'quill', 'tinker', 'vesper', 'atlas',
+  'brack', 'cinder', 'delve', 'ember', 'flint', 'gale', 'hollow', 'iris',
+  'juniper', 'kiln', 'lumen', 'marrow', 'nettle', 'onyx', 'plume', 'quarry',
+];
+---
+
+<Hall title="Arms">
+  <section class="top rise">
+    <p class="mark">Reference sheet</p>
+    <h1>Arms</h1>
+    <p class="lede">
+      Every member's coat of arms is generated from their handle alone. The same
+      handle always produces the same arms, and the tincture rule is respected —
+      never metal on metal, nor colour on colour — which is what makes these read
+      as heraldry rather than as random shapes.
+    </p>
+    <p class="mark">
+      {DIVISIONS.length} divisions × {CHARGE_NAMES.length} charges × 8 tinctures
+    </p>
+  </section>
+
+  <ul class="sheet">
+    {sample.map((h) => (
+      <li>
+        <Crest handle={h} size={82} title={false} />
+        <strong>{h}</strong>
+        <span>{blazon(h).text}</span>
+      </li>
+    ))}
+  </ul>
+</Hall>
+
+<style>
+  .top { padding: clamp(2rem, 6vw, 4rem) 0 2.4rem; }
+  .top > * + * { margin-top: 0.7rem; }
+  .sheet {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+    gap: 1.6rem 1rem;
+  }
+  .sheet li {
+    display: grid;
+    justify-items: center;
+    gap: 0.4rem;
+    text-align: center;
+  }
+  .sheet strong {
+    font-family: var(--mark);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--brass-lit);
+  }
+  .sheet span {
+    font-size: 0.74rem;
+    font-style: italic;
+    color: rgba(242, 229, 203, 0.5);
+    line-height: 1.4;
+  }
+</style>
