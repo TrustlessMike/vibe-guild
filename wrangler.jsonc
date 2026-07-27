@@ -6,9 +6,14 @@
   "name": "vibe-guild",
   "account_id": "19ab5582f795f48dc28ecb9f41d7c7d1",
   "compatibility_date": "2026-07-26",
+  // Only reached on an asset miss, to serve the 404 page. See worker/index.js.
+  "main": "./worker/index.js",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     "html_handling": "auto-trailing-slash",
-    "not_found_handling": "404-page"
+    // Handled by the Worker instead — "404-page" cannot find the page once
+    // html_handling has canonicalised it to /404.
+    "not_found_handling": "none"
   }
 }

@@ -36,7 +36,14 @@ import Hall from '../layouts/Hall.astro';
     text-align: center;
     transform: rotate(-0.4deg);
   }
-  .lost h1 { margin: 0.5rem 0 0.9rem; }
+  /* The global display size is set for full-width mastheads and runs past the
+     edge of a 34rem sheet — "commission" is one long unbreakable word. */
+  .lost h1 {
+    margin: 0.5rem 0 0.9rem;
+    font-size: clamp(1.75rem, 5.2vw, 2.5rem);
+    line-height: 1.06;
+    overflow-wrap: break-word;
+  }
   .lost p { color: var(--ink-soft); }
   .lost__acts {
     display: flex;
