@@ -91,6 +91,12 @@ const projects = defineCollection({
           aspect: z.string().default('16 / 9'),
           /** Some works want the whole viewport rather than a card. */
           fullscreen: z.boolean().default(true),
+          /**
+           * Set when the work needs a keyboard or mouse. Most traffic from a
+           * shared link is a phone, and a submission that cannot be played
+           * there should say so rather than present a frame that does nothing.
+           */
+          desktopOnly: z.boolean().default(false),
         })
         .refine((p) => !!p.bundle !== !!p.url, {
           message: 'Give exactly one of play.bundle or play.url',

@@ -192,4 +192,26 @@ const roster = creators
     .hero { grid-template-columns: 1fr; }
     .hero__hangings { order: -1; }
   }
+
+  /*
+   * Phones. Two things go wrong here that do not on a tablet.
+   *
+   * The banners carry pixel minimums — 132 + 112 + 112 plus gaps is about 369px,
+   * which cannot fit a 343px column. A grid track cannot shrink below its
+   * content's minimum, so the whole hero blew out to 389px: the third banner was
+   * clipped off the right edge and the rotated parchment pushed the document to
+   * 407px against a 375px viewport. Percentages have no floor to fight.
+   *
+   * And the banners are decorative. Ahead of the charter they filled the entire
+   * first screen, so what the site actually *is* began 526px down — below the
+   * fold on most phones, which is precisely where a shared link lands.
+   */
+  @media (max-width: 600px) {
+    .hero__hangings { order: 0; margin-top: 2rem; }
+    .banner--a { width: 34%; }
+    .banner--b,
+    .banner--c { width: 29%; }
+    .banner { padding: 1.4rem 0.6rem 3.4rem; }
+    .hero__charter { transform: none; }
+  }
 </style>
