@@ -11,7 +11,8 @@
     "apps": "node tools/serve-apps.mjs",
     "deploy:apps": "wrangler deploy -c wrangler.apps.jsonc",
     "deploy:site": "astro build && wrangler deploy",
-    "deploy": "npm run deploy:apps && npm run deploy:site"
+    "deploy": "npm run deploy:apps && npm run deploy:site",
+    "og": "node tools/build-og.mjs"
   },
   "keywords": [],
   "author": "",

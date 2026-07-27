@@ -19,6 +19,11 @@ const nav = [
   { href: '/submit', label: 'Post a Commission' },
 ];
 const path = Astro.url.pathname;
+
+// Absolute URLs, because og:image and og:url are not resolved relative to the
+// page by the services that read them — a relative path just yields no card.
+const canonical = new URL(path, Astro.site ?? 'https://vibe-guild.moneytalkwithmalik.workers.dev');
+const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwithmalik.workers.dev');
 ---
 
 <!doctype html>
@@ -28,9 +33,21 @@ const path = Astro.url.pathname;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title} · The Vibe Guild</title>
     <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
     <meta property="og:title" content={`${title} · The Vibe Guild`} />
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="The Vibe Guild" />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="The Vibe Guild — a hall for people who make things" />
+    <!-- Without summary_large_image the card renders as a thumbnail strip. -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={`${title} · The Vibe Guild`} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="icon"

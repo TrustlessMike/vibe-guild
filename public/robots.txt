@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://vibe-guild.moneytalkwithmalik.workers.dev/sitemap.xml
