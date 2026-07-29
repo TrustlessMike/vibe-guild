@@ -1,5 +1,5 @@
 ---
-import { CHARGES, blazon, divisionPaths } from '../lib/crest';
+import { CHARGES, blazon, divisionPaths, hash } from '../lib/crest';
 
 interface Props {
   handle: string;
@@ -11,7 +11,11 @@ interface Props {
 const { handle, size = 64, overrides = {}, title = true } = Astro.props;
 const arms = blazon(handle, overrides);
 const halves = divisionPaths(arms.division);
-const id = `crest-${handle.replace(/[^a-z0-9]/gi, '')}`;
+// Stripping non-alphanumerics collided `foo-bar` with `foobar`, and the same
+// member rendered twice on one page emitted duplicate clipPath ids — at which
+// point every crest on the page resolves to whichever came first. Hashing the
+// full props makes each instance's ids its own.
+const id = `c${hash(handle + size + JSON.stringify(overrides)).toString(36)}`;
 const shield = 'M3 3 H97 V56 C97 87 73 105 50 113 C27 105 3 87 3 56 Z';
 ---
 
@@ -26,6 +30,12 @@ const shield = 'M3 3 H97 V56 C97 87 73 105 50 113 C27 105 3 87 3 56 Z';
 >
   <defs>
     <clipPath id={id}><path d={shield} /></clipPath>
+    {halves && (
+      <>
+        <clipPath id={`${id}-h0`}><path d={halves[0]} /></clipPath>
+        <clipPath id={`${id}-h1`}><path d={halves[1]} /></clipPath>
+      </>
+    )}
     <linearGradient id={`${id}-sheen`} x1="0" y1="0" x2="0.4" y2="1">
       <stop offset="0%" stop-color="#fff" stop-opacity="0.22" />
       <stop offset="45%" stop-color="#fff" stop-opacity="0.04" />
@@ -38,30 +48,46 @@ const shield = 'M3 3 H97 V56 C97 87 73 105 50 113 C27 105 3 87 3 56 Z';
     {halves && <path d={halves[1]} fill={arms.second.hex} />}
 
     <!--
-      A charge laid across a division will otherwise vanish wherever it meets a
-      half of its own tincture. Outlining it keeps it legible against anything
-      without breaking the tincture rule, since an outline is not a field.
+      Counterchanged: the charge is drawn twice, each pass clipped to one half
+      and wearing that half's opposite tincture. It therefore contrasts on both
+      sides by construction, which is what heraldry actually does — and is why
+      the heavy keyline this used to need is gone. A plain field has no division
+      to counterchange against, so it keeps a hairline to sit off the ground.
     -->
-    <g
-      fill={arms.chargeTincture.hex}
-      color={arms.chargeTincture.hex}
-      stroke="#171009"
-      stroke-width={arms.division === 'plain' ? 1.2 : 3}
-      stroke-linejoin="round"
-      style="paint-order: stroke fill"
-      opacity="0.98"
-    >
-      <Fragment set:html={CHARGES[arms.charge]} />
-    </g>
+    {halves ? (
+      <>
+        <g clip-path={`url(#${id}-h0)`} fill={arms.second.hex} color={arms.second.hex}>
+          <Fragment set:html={CHARGES[arms.charge]} />
+        </g>
+        <g clip-path={`url(#${id}-h1)`} fill={arms.field.hex} color={arms.field.hex}>
+          <Fragment set:html={CHARGES[arms.charge]} />
+        </g>
+      </>
+    ) : (
+      <g
+        fill={arms.chargeTincture.hex}
+        color={arms.chargeTincture.hex}
+        stroke="#171009"
+        stroke-width="0.8"
+        stroke-linejoin="round"
+        style="paint-order: stroke fill"
+      >
+        <Fragment set:html={CHARGES[arms.charge]} />
+      </g>
+    )}
 
     {arms.bordure && (
-      <path
-        d={shield}
-        fill="none"
-        stroke="#c2913f"
-        stroke-width="9"
-        opacity="0.9"
-      />
+      halves ? (
+        <>
+          <path d={shield} fill="none" stroke="#171009" stroke-width="13" opacity="0.85" />
+          <path d={shield} fill="none" stroke={arms.second.hex} stroke-width="10"
+                clip-path={`url(#${id}-h0)`} />
+          <path d={shield} fill="none" stroke={arms.field.hex} stroke-width="10"
+                clip-path={`url(#${id}-h1)`} />
+        </>
+      ) : (
+        <path d={shield} fill="none" stroke={arms.second.hex} stroke-width="9" opacity="0.9" />
+      )
     )}
     <rect width="100" height="116" fill={`url(#${id}-sheen)`} />
   </g>

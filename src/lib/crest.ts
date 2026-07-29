@@ -71,7 +71,7 @@ export const CHARGES: Record<string, string> = {
 export const CHARGE_NAMES = Object.keys(CHARGES);
 
 /** FNV-1a — small, fast, and stable across runs and platforms. */
-function hash(str: string): number {
+export function hash(str: string): number {
   let h = 0x811c9dc5;
   for (let i = 0; i < str.length; i++) {
     h ^= str.charCodeAt(i);
@@ -118,7 +118,17 @@ export function blazon(handle: string, overrides: Partial<{
   }
   const opposing = field.metal ? COLOURS : METALS;
   const second = pick(opposing);
-  const chargeTincture = division === 'plain' ? second : pick(opposing);
+  /**
+   * On a divided shield the charge is *counterchanged*: it takes the opposite
+   * tincture on each half, so it contrasts on both by construction.
+   *
+   * Picking a third tincture here instead — which is what this did — draws it
+   * from the same set `second` came from, so the charge either landed in its
+   * own tincture and vanished, or put metal on metal. Both violate the rule the
+   * site's own copy claims to keep, and the fat black keyline in Crest.astro
+   * existed to paper over it. Counterchange makes the keyline unnecessary.
+   */
+  const chargeTincture = second;
 
   const charge = overrides.charge && CHARGES[overrides.charge]
     ? overrides.charge
@@ -127,9 +137,21 @@ export function blazon(handle: string, overrides: Partial<{
   const bordure = r.next().value % 4 === 0;
 
   const divisionText = division === 'plain' ? '' : `${division} `;
+  // A counterchanged charge is blazoned as such rather than by tincture — naming
+  // one would be wrong, since it wears both. The bordure follows the same rule;
+  // hardcoding "or" put a gold border on gold fields, on the very page built to
+  // demonstrate that metal never sits on metal.
+  // "a anvil", "a oak leaf" — the charge list has vowels in it.
+  const article = /^[aeiou]/.test(charge) ? 'an' : 'a';
+  const chargeText = division === 'plain'
+    ? `${article} ${charge} ${chargeTincture.name}`
+    : `${article} ${charge} counterchanged`;
+  const bordureText = !bordure
+    ? ''
+    : `, within a bordure ${division === 'plain' ? second.name : 'counterchanged'}`;
   const text =
     `${divisionText}${field.name}${division === 'plain' ? '' : ` and ${second.name}`}` +
-    `, a ${charge} ${chargeTincture.name}${bordure ? ', within a bordure or' : ''}`;
+    `, ${chargeText}${bordureText}`;
 
   return { field, second, division, charge, chargeTincture, bordure, text };
 }

@@ -56,17 +56,23 @@ const sample = [
     gap: 0.4rem;
     text-align: center;
   }
+  /*
+   * Ink, not brass. The brass and vellum tokens are built for the dark timber
+   * ground; used unguarded on a parchment sheet they invert. Measured on
+   * #f4e8cf: --brass-lit is 1.26:1 and the old rgba(242,229,203,.5) blazon was
+   * lighter than the paper under it. These are 14.1:1 and 7.7:1.
+   */
   .sheet strong {
     font-family: var(--mark);
     font-size: 0.72rem;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--brass-lit);
+    color: var(--ink);
   }
   .sheet span {
     font-size: 0.74rem;
     font-style: italic;
-    color: rgba(242, 229, 203, 0.5);
+    color: var(--ink-soft);
     line-height: 1.4;
   }
 </style>

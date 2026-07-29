@@ -146,13 +146,30 @@ a:hover { color: var(--brass-hi); }
     radial-gradient(60% 50% at 88% 92%, rgba(160, 120, 60, 0.16), transparent 65%),
     radial-gradient(38% 30% at 72% 26%, rgba(150, 108, 52, 0.09), transparent 70%),
     linear-gradient(168deg, var(--vellum) 0%, var(--vellum-warm) 58%, var(--vellum-deep) 100%);
+  /*
+   * No outer shadow here, deliberately. `clip-path` clips everything the
+   * element paints, box-shadow included, so the cast shadow that used to be
+   * declared alongside it rendered nothing at all — every sheet on the site sat
+   * flush against the timber with no thickness. The insets survive because they
+   * paint inside the border box.
+   *
+   * The cast shadow moves to `filter: drop-shadow`, which is applied *after*
+   * clipping — so it comes back, and as a bonus it follows the torn corner
+   * instead of squaring it off the way a box-shadow would. Two layers only: a
+   * tight contact shade that reads as the sheet's own thickness, and one soft
+   * cast. Both are cooled rather than neutral black, because pure black over a
+   * warm ground desaturates it and nothing separates.
+   */
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.45) inset,
-    0 -14px 26px -18px rgba(120, 84, 36, 0.7) inset,
-    var(--shadow-hang);
+    0 -14px 26px -18px rgba(120, 84, 36, 0.7) inset;
+  filter:
+    drop-shadow(0 2px 1px rgba(9, 7, 16, 0.55))
+    drop-shadow(0 16px 22px rgba(9, 7, 16, 0.5));
   /* torn lower-right corner */
   clip-path: polygon(0 0, 100% 0, 100% calc(100% - 18px), calc(100% - 18px) 100%, 0 100%);
 }
+
 .sheet::after {
   /* fibres */
   content: '';
@@ -396,10 +413,20 @@ a:hover { color: var(--brass-hi); }
   font-family: var(--carve);
   font-weight: 900;
   font-size: 3.4em;
-  line-height: 0.82;
-  padding: 0.06em 0.12em 0 0;
-  color: var(--brass-lit);
-  text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5), 0 0 26px rgba(255, 198, 112, 0.4);
+  /* Cinzel's cap-height is 0.70em, so 3.4em is already an exact two-line cap —
+     it was 0.82 line-height inflating the box that pushed the glyph down into
+     the second line instead of sitting on its baseline. */
+  line-height: 0.7;
+  padding: 0.04em 0.12em 0 0;
+  /*
+   * Rubric red, not brass. `--brass-lit` is rgb(240,205,133) and a `.sheet` is
+   * rgb(244,232,207): 1.26:1, which is not a colour, it is a smudge — and the
+   * glow behind it was a dark-ground effect doing nothing on parchment. Red is
+   * what an illuminated initial actually is, it is already the site's rubric
+   * (see the submit steps), and it lands at 6.9:1.
+   */
+  color: #8a2f1d;
+  text-shadow: 0 1px 0 rgba(240, 205, 133, 0.85), 0 2px 0 rgba(122, 88, 44, 0.35);
 }
 
 /* --- motion ------------------------------------------------------------ */
