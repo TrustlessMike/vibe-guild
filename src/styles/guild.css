@@ -46,7 +46,30 @@
   --mark: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
 
   --shadow-hang: 0 26px 50px -18px rgba(0, 0, 0, 0.85);
-  --measure: 66ch;
+  /*
+   * `ch` is the width of "0", and Spectral's zero is 0.500em while its real
+   * prose average is nearer 0.464em — so 66ch measured 72 characters, past the
+   * comfortable range. 60ch lands at ~66.
+   */
+  --measure: 60ch;
+
+  /*
+   * One scale, not five unrelated clamps. It was possible for h3 and .lede to
+   * render at exactly the same size at both ends of their ranges — which they
+   * did — because nothing related them.
+   *
+   * Ratio ~1.25 through the text sizes and wider steps between the display
+   * ones, and deliberately compressed at the small end: heavy size contrast
+   * that reads as confident on a wide screen just wastes vertical space on a
+   * phone.
+   */
+  --f-body: clamp(1rem, 0.96rem + 0.22vw, 1.09rem);
+  --f-lede: clamp(1.12rem, 1.05rem + 0.34vw, 1.36rem);
+  --f-h3: clamp(1.24rem, 1.14rem + 0.46vw, 1.7rem);
+  --f-h2: clamp(1.55rem, 1.28rem + 1.15vw, 2.66rem);
+  /* Capped at 4.6 rather than 5.2: the old maximum was overridden downward at
+     every place an h1 actually appears, which is the sign of a wrong number. */
+  --f-h1: clamp(2.4rem, 1.44rem + 4vw, 4.6rem);
   --gut: clamp(1rem, 3vw, 2.75rem);
 }
 
@@ -61,8 +84,15 @@ body {
   margin: 0;
   color: var(--vellum);
   font-family: var(--read);
-  font-size: clamp(1rem, 0.96rem + 0.22vw, 1.09rem);
+  font-size: var(--f-body);
   line-height: 1.68;
+  /*
+   * Weight and small-caps may still be synthesised; style may not. A faux
+   * italic is a shear, and shearing an inscriptional face like Cinzel — which
+   * has no italic to fall back to — destroys the very modelling that makes it
+   * worth using. Better to see the upright and notice than to ship a fake.
+   */
+  font-synthesis: weight small-caps;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
@@ -113,13 +143,22 @@ main, header, footer { position: relative; z-index: 1; }
 h1, h2, h3, .carve {
   font-family: var(--carve);
   font-weight: 700;
-  letter-spacing: 0.045em;
-  line-height: 1.08;
   margin: 0;
 }
-h1 { font-size: clamp(2.4rem, 1.3rem + 4.4vw, 5.2rem); }
-h2 { font-size: clamp(1.5rem, 1.15rem + 1.4vw, 2.3rem); }
-h3 { font-size: clamp(1.06rem, 0.96rem + 0.5vw, 1.32rem); }
+/*
+ * Tracking and leading are functions of size, not constants.
+ *
+ * They used to be one value each for every level, which meant an 83px h1 and a
+ * 21px h3 got the same 0.045em and the same 1.08. Letterspacing an
+ * inscriptional face at display size is backwards — Cinzel's own sidebearings
+ * are cut for it — while small caps genuinely need the air. And 1.08 is tighter
+ * than Cinzel's own em box (0.98 ascent + 0.37 descent), so it collided at
+ * every level.
+ */
+h1 { font-size: var(--f-h1); letter-spacing: 0.005em; line-height: 1.02; }
+h2 { font-size: var(--f-h2); letter-spacing: 0.022em; line-height: 1.14; }
+h3 { font-size: var(--f-h3); letter-spacing: 0.04em; line-height: 1.28; }
+.carve { letter-spacing: 0.045em; line-height: 1.2; }
 
 p { margin: 0 0 1em; max-width: var(--measure); }
 a { color: var(--brass-lit); text-underline-offset: 3px; text-decoration-color: rgba(240, 205, 133, 0.35); }
@@ -132,7 +171,15 @@ a:hover { color: var(--brass-hi); }
   text-transform: uppercase;
   color: var(--brass);
 }
-.lede { font-size: clamp(1.06rem, 1rem + 0.42vw, 1.32rem); font-weight: 300; color: rgba(244, 232, 207, 0.82); }
+/* A lede is longer-lined than body but must not run to the same measure, or
+   only its weight distinguishes it from the paragraph beneath. */
+.lede {
+  font-size: var(--f-lede);
+  font-weight: 300;
+  line-height: 1.5;
+  max-width: 52ch;
+  color: rgba(244, 232, 207, 0.82);
+}
 
 /* --------------------------------------------------------------------------
    Parchment: the surface everything of substance sits on.

@@ -115,9 +115,24 @@ const roster = creators
   /* Smaller than the global display size: at 5rem the charter towered over
      the banners and left the right of the wall bare. */
   .hero h1 { font-size: clamp(2.2rem, 1.5rem + 3vw, 4.1rem); letter-spacing: 0.015em; }
+  /*
+   * A real italic, not a sheared Roman. Cinzel is imported as `wght@400..900`
+   * with no `ital` axis, so `font-style: italic` on an h1 set in it made the
+   * browser synthesise an oblique — and Cinzel is Trajan-derived inscriptional
+   * capitals, where a shear destroys the modelled serifs and the stress axis.
+   * This is the largest word on the home page.
+   *
+   * Spectral ships a true chancery italic (imported at `1,400`). 1.06em matches
+   * Cinzel's 0.70 cap-height against Spectral's 0.66, so the two optically
+   * agree on the capline despite being different faces.
+   */
   .hero__accent {
     color: #8a2f1d;
+    font-family: var(--read);
     font-style: italic;
+    font-weight: 400;
+    font-size: 1.06em;
+    letter-spacing: 0;
   }
   .hero__acts { display: flex; flex-wrap: wrap; gap: 0.8rem; margin-top: 1.8rem; }
 
