@@ -39,10 +39,19 @@ const sandbox = [
   'allow-downloads',
   ...(isolated || d.play.url ? ['allow-same-origin'] : []),
 ].join(' ');
+/**
+ * Whether the work is reachable somewhere other than the Guild's own origin,
+ * which is the condition for offering to open it top-level. In the same-origin
+ * dev fallback that offer would hand a submission the Guild's own storage and
+ * service-worker scope — the very thing the two-origin split exists to prevent.
+ */
+const offSite = isolated || !!d.play.url;
 const posted = d.posted.toLocaleDateString('en-GB', {
   day: 'numeric', month: 'long', year: 'numeric',
 });
-
+// Licences are given as identifiers ("MIT", "Apache-2.0"), which read as an
+// unlabelled code beside a Source button unless the word is said out loud.
+const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licence`;
 ---
 
 <Hall title={d.title} description={d.tagline}>
@@ -54,6 +63,7 @@ const posted = d.posted.toLocaleDateString('en-GB', {
         <p class="lede">{d.tagline}</p>
 
         <div class="by">
+          <span class="mark">Made by</span>
           {authors.map((a: any) => (
             <a class="by__one" href={`/creators/${a.id}`}>
               <Crest handle={a.id} size={34} title={false} />
@@ -71,10 +81,8 @@ const posted = d.posted.toLocaleDateString('en-GB', {
             ))}
           </div>
         )}
-        <div class="acts">
-          {d.source && <a class="btn btn--ghost" href={d.source}>Source ↗</a>}
-          <span class="mark">{d.license}</span>
-        </div>
+        <p class="fact"><span class="mark">Terms</span><span class="fact__v">{licence}</span></p>
+        {d.source && <a class="btn btn--ghost" href={d.source}>Read the source ↗</a>}
       </div>
     </header>
 
@@ -86,31 +94,169 @@ const posted = d.posted.toLocaleDateString('en-GB', {
       page. Without a separate origin configured the permission is dropped
       instead — safe, but the submission loses its storage.
     -->
-    {d.play.desktopOnly && (
-      <p class="handheld">
-        Needs a keyboard and mouse — open this on a computer to play it.
-      </p>
-    )}
+    <figure class="stage frame" style={`--aspect:${d.play.aspect}`} data-stage>
+      {d.play.desktopOnly && (
+        <p class="stage__note">
+          <span class="mark">Wants a desk</span>
+          Keyboard and mouse required — this one will load below, but it needs a computer to play.
+        </p>
+      )}
 
-    <section class="stage frame" style={`--aspect:${d.play.aspect}`}>
-      <iframe
-        src={src}
-        title={`${d.title} — playable`}
-        sandbox={sandbox}
-        allow="autoplay; gamepad; fullscreen; xr-spatial-tracking"
-        loading="lazy"
-        referrerpolicy="no-referrer"
-      ></iframe>
-      <div class="stage__bar">
-        <span class="mark">
-          {isolated ? "Sandboxed on its own origin · it cannot touch the Guild"
-            : "Sandboxed · run npm run apps to give it its own origin"}
-        </span>
-        {d.play.fullscreen && (
-          <button class="chip" type="button" data-fullscreen>Fullscreen</button>
-        )}
+      <div class="stage__well">
+        <iframe
+          src={src}
+          title={`${d.title} — playable`}
+          sandbox={sandbox}
+          allow="autoplay; gamepad; fullscreen; xr-spatial-tracking"
+          loading="lazy"
+          referrerpolicy="no-referrer"
+        ></iframe>
+
+        <!--
+          The frame is a black rectangle until the submission's own first paint,
+          which for a multi-megabyte build is seconds of nothing. This stands in
+          front of it until then. It is raised by the script below and by nothing
+          else, so with JS off it never appears and the frame is simply itself.
+        -->
+        <div class="veil" role="status">
+          <div class="veil__wait">
+            <div class="veil__arms" aria-hidden="true">
+              <Crest handle={authors[0].id} size={58} title={false} />
+            </div>
+            <p class="mark">Raising the curtain</p>
+            <p class="veil__say">
+              {d.title} is coming up in its frame. The whole build is fetched on
+              first open, so give it a moment.
+            </p>
+            <div class="veil__bar" aria-hidden="true"><span></span></div>
+            <p class="veil__slow">Still coming — a large build takes a while on a slow line.</p>
+          </div>
+
+          <div class="veil__fail">
+            <p class="mark veil__cue--bad">The curtain did not rise</p>
+            <p class="veil__say">
+              Nothing has arrived. The work may be offline, or this browser may
+              be blocking the frame.
+            </p>
+            <div class="veil__acts">
+              <button class="btn btn--ghost" type="button" data-retry>Try again</button>
+              {offSite && (
+                <a class="btn btn--ghost" href={src} target="_blank" rel="noreferrer">
+                  Open it in a new tab ↗
+                </a>
+              )}
+            </div>
+          </div>
+        </div>
       </div>
-    </section>
+
+      <figcaption class="stage__bar">
+        <p class="vouch">
+          <svg class="vouch__shield" viewBox="0 0 100 116" width="14" height="16" aria-hidden="true">
+            <path
+              d="M3 3H97v53c0 31-24 49-47 57C27 105 3 87 3 56Z"
+              fill="rgba(192,138,52,0.16)"
+              stroke="#c08a34"
+              stroke-width="7"
+            />
+          </svg>
+          {isolated ? (
+            <>
+              <span class="mark vouch__cue">Safe to play</span>
+              <span class="vouch__say">
+                A stranger's code runs here, and the Guild treats it that way: it
+                is served from its own origin inside a locked frame, so it cannot
+                reach this page, the Guild, or you.
+              </span>
+            </>
+          ) : (
+            <>
+              <span class="mark vouch__cue">Not yet split off</span>
+              <span class="vouch__say">
+                This copy is served from the Guild's own origin. Run
+                <code>npm run apps</code> to give submissions the separate origin
+                they get in the hall.
+              </span>
+            </>
+          )}
+        </p>
+
+        <span class="stage__acts">
+          {offSite && (
+            <a class="chip" href={src} target="_blank" rel="noreferrer">New tab ↗</a>
+          )}
+          {d.play.fullscreen && (
+            <button class="chip" type="button" data-fullscreen hidden>Fullscreen</button>
+          )}
+        </span>
+      </figcaption>
+    </figure>
+
+    <script is:inline>
+      (() => {
+        const stage = document.querySelector('[data-stage]');
+        const frame = stage && stage.querySelector('iframe');
+        if (!frame) return;
+        const src = frame.getAttribute('src');
+
+        let timers = [];
+        const stop = () => { timers.forEach(clearTimeout); timers = []; };
+        const set = (state) => { stage.dataset.state = state; };
+
+        /*
+         * `loading="lazy"` means the fetch may not have started yet, so the
+         * clock that eventually calls this a failure only starts once the frame
+         * nears the viewport. Otherwise a stage below a long page would report
+         * a failure the browser had not yet attempted.
+         */
+        const clock = () => {
+          stop();
+          timers.push(setTimeout(() => {
+            if (stage.dataset.state === 'loading') set('slow');
+          }, 7000));
+          timers.push(setTimeout(() => {
+            if (stage.dataset.state !== 'ready') set('failed');
+          }, 30000));
+        };
+
+        frame.addEventListener('load', () => { stop(); set('ready'); });
+        frame.addEventListener('error', () => { stop(); set('failed'); });
+
+        set('loading');
+        if ('IntersectionObserver' in window) {
+          const io = new IntersectionObserver((entries) => {
+            if (entries.some((e) => e.isIntersecting)) { io.disconnect(); clock(); }
+          }, { rootMargin: '250px' });
+          io.observe(frame);
+        } else {
+          clock();
+        }
+
+        const retry = stage.querySelector('[data-retry]');
+        if (retry) {
+          retry.addEventListener('click', () => {
+            set('loading');
+            clock();
+            /*
+             * Cleared first so the re-set is a real attribute change: a
+             * same-value assignment is not guaranteed to re-navigate. Parking on
+             * about:blank instead would fire a `load` of its own, which this
+             * would then read as the submission having arrived.
+             */
+            frame.removeAttribute('src');
+            frame.setAttribute('src', src);
+          });
+        }
+
+        // Ships hidden: where a cross-origin frame cannot be put fullscreen —
+        // and with JS off — the control would be a button that does nothing.
+        const full = stage.querySelector('[data-fullscreen]');
+        if (full && frame.requestFullscreen) {
+          full.hidden = false;
+          full.addEventListener('click', () => frame.requestFullscreen());
+        }
+      })();
+    </script>
 
     <div class="sheet leaf illuminate prose">
       <Content />
@@ -126,12 +272,6 @@ const posted = d.posted.toLocaleDateString('en-GB', {
   </article>
 </Hall>
 
-<script>
-  document.querySelector('[data-fullscreen]')?.addEventListener('click', () => {
-    document.querySelector('.stage iframe')?.requestFullscreen?.();
-  });
-</script>
-
 <style>
   .commission { padding: clamp(1.6rem, 5vw, 3.2rem) 0 0; }
 
@@ -145,7 +285,12 @@ const posted = d.posted.toLocaleDateString('en-GB', {
   .head__text > * + * { margin-top: 0.7rem; }
   .head__meta { display: grid; gap: 0.9rem; justify-items: end; }
 
-  .by { display: flex; flex-wrap: wrap; gap: 0.8rem; padding-top: 0.4rem; }
+  .by { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; padding-top: 0.4rem; }
+  /*
+   * Without a label the crests read as ornament rather than attribution. It
+   * keeps `.mark`'s brass rather than being dimmed to sit back — `--brass-dim`
+   * is 2.9:1 on the wall, and this is 11px text that has to be read.
+   */
   .by__one {
     display: inline-flex;
     align-items: center;
@@ -159,49 +304,228 @@ const posted = d.posted.toLocaleDateString('en-GB', {
   .by__one:hover { color: var(--brass-lit); }
 
   .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: flex-end; }
-  .acts { display: flex; align-items: center; gap: 0.9rem; }
 
-  /*
-   * Only shown where it is true: on a wide screen the frame speaks for itself,
-   * and a standing "you need a keyboard" notice would just be noise.
-   */
-  .handheld {
-    display: none;
-    margin: 0 0 0.8rem;
-    padding: 0.7rem 0.9rem;
-    border: 1px solid rgba(194, 145, 63, 0.34);
-    border-left-width: 3px;
-    background: rgba(194, 145, 63, 0.08);
-    color: var(--vellum);
-    font-family: var(--mark);
-    font-size: 0.82rem;
-    line-height: 1.5;
+  .fact {
+    display: flex;
+    align-items: baseline;
+    gap: 0.55rem;
+    margin: 0;
+    max-width: none;
   }
-  @media (max-width: 760px), (pointer: coarse) {
-    .handheld { display: block; }
-  }
+  .fact__v { font-size: 0.92rem; color: rgba(244, 232, 207, 0.78); }
 
+  /* --------------------------------------------------------------------------
+     The stage: a cabinet the work sits inside, not a bordered div. Timber
+     surround with the grain running through it, a brass lip, and the picture
+     recessed behind that lip so it reads as set back into the case.
+     -------------------------------------------------------------------------- */
   .stage {
-    padding: 12px;
-    background:
-      radial-gradient(120% 90% at 50% -10%, rgba(255, 198, 112, 0.12), transparent 60%),
-      linear-gradient(180deg, #120c07, #0b0704);
+    margin: 0;
+    padding: clamp(11px, 1.3vw, 20px);
+    background-color: #241708;
+    background-image:
+      /* candles above the hall catching the top of the case */
+      linear-gradient(180deg, rgba(255, 198, 112, 0.13), transparent 34%),
+      repeating-linear-gradient(
+        90deg,
+        rgba(0, 0, 0, 0.24) 0 2px,
+        transparent 2px 84px,
+        rgba(0, 0, 0, 0.16) 84px 86px
+      ),
+      repeating-linear-gradient(
+        92deg,
+        rgba(0, 0, 0, 0.11) 0 4px,
+        transparent 4px 11px,
+        rgba(255, 214, 160, 0.02) 11px 13px
+      ),
+      linear-gradient(168deg, var(--oak-lit) 0%, var(--oak) 54%, #150e07 100%);
   }
+  /*
+   * The bevel on the case itself: a lit top edge, a dark foot. Kept as an inset
+   * shadow so it follows the surround rather than needing another element, and
+   * appended to the hanging shadow `.frame` already casts.
+   */
+  .stage.frame {
+    box-shadow:
+      var(--shadow-hang),
+      0 0 0 1px rgba(0, 0, 0, 0.55) inset,
+      0 1px 0 rgba(240, 205, 133, 0.22) inset,
+      0 -14px 26px -20px rgba(0, 0, 0, 0.9) inset;
+  }
+
+  .stage__well {
+    position: relative;
+    overflow: hidden;
+    background: #070503;
+    /* the brass lip, outside the picture */
+    box-shadow: 0 0 0 1px rgba(192, 138, 52, 0.4);
+  }
+  /*
+   * The recess. Inset shadows on the well itself would paint under the iframe
+   * and never be seen, so the shading that sets the picture back into the case
+   * has to sit in front of it — hence an overlay that takes no pointer events.
+   */
+  .stage__well::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.6) inset,
+      0 16px 22px -16px rgba(0, 0, 0, 0.92) inset,
+      0 -12px 20px -16px rgba(0, 0, 0, 0.75) inset;
+  }
+
   .stage iframe {
     display: block;
     width: 100%;
     aspect-ratio: var(--aspect, 16 / 9);
     border: 0;
-    background: #000;
+    background: #070503;
   }
+
+  /*
+   * Only shown where it is true: on a wide screen the frame speaks for itself,
+   * and a standing "you need a keyboard" notice would just be noise. It hangs
+   * on the case above the picture, so it reads as a placard on this cabinet
+   * rather than a loose warning strip in the page.
+   */
+  .stage__note {
+    display: none;
+    margin: 0 0 clamp(9px, 1.1vw, 14px);
+    max-width: none;
+    padding: 0.6rem 0.8rem;
+    border-left: 3px solid rgba(192, 138, 52, 0.75);
+    background: rgba(194, 145, 63, 0.1);
+    color: rgba(244, 232, 207, 0.86);
+    font-family: var(--mark);
+    font-size: 0.76rem;
+    line-height: 1.6;
+  }
+  .stage__note .mark { display: block; color: var(--brass); }
+  @media (max-width: 760px), (pointer: coarse) {
+    .stage__note { display: block; }
+  }
+
+  /* --- the curtain over an unloaded submission --------------------------- */
+
+  .veil {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    display: grid;
+    place-content: center;
+    justify-items: center;
+    padding: clamp(1rem, 3vw, 2rem);
+    text-align: center;
+    background:
+      radial-gradient(120% 100% at 50% 0%, rgba(255, 198, 112, 0.1), transparent 62%),
+      linear-gradient(180deg, #16100a, #070503);
+    /* Hidden until the script raises it, so a JS-less visitor is never left
+       staring at a curtain nothing can lift. */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 380ms ease, visibility 380ms;
+  }
+  .stage[data-state='loading'] .veil,
+  .stage[data-state='slow'] .veil,
+  .stage[data-state='failed'] .veil { opacity: 1; visibility: visible; }
+
+  .veil__wait, .veil__fail { display: grid; justify-items: center; gap: 0.7rem; }
+  .veil__fail, .veil__slow { display: none; }
+  .stage[data-state='slow'] .veil__slow { display: block; }
+  .stage[data-state='failed'] .veil__wait { display: none; }
+  .stage[data-state='failed'] .veil__fail { display: grid; }
+
+  .veil__arms { opacity: 0.5; }
+  /*
+   * Wax lightened towards parchment rather than `--wax-lit` itself, which is
+   * 3.8:1 on this near-black ground and this line is 11px mono. Lifted it lands
+   * near 7:1 and still reads as wax caught by candlelight, not as an error red.
+   */
+  .veil__cue--bad { color: #d38670; }
+  .veil__say {
+    margin: 0;
+    max-width: 46ch;
+    font-size: 0.95rem;
+    line-height: 1.55;
+    color: rgba(244, 232, 207, 0.78);
+  }
+  .veil__slow {
+    margin: 0;
+    max-width: 46ch;
+    font-family: var(--mark);
+    font-size: 0.74rem;
+    letter-spacing: 0.06em;
+    color: rgba(244, 232, 207, 0.56);
+  }
+  .veil__acts { display: flex; flex-wrap: wrap; gap: 0.7rem; justify-content: center; }
+
+  /* An indeterminate sweep, because the real figure is unknowable from here:
+     a cross-origin frame reports no progress. */
+  .veil__bar {
+    width: min(230px, 62%);
+    height: 2px;
+    overflow: hidden;
+    background: rgba(192, 138, 52, 0.2);
+  }
+  .veil__bar span {
+    display: block;
+    width: 40%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, var(--brass-lit), transparent);
+    animation: sweep 1500ms ease-in-out infinite;
+  }
+  @keyframes sweep {
+    from { transform: translateX(-105%); }
+    to { transform: translateX(320%); }
+  }
+  /* The bar's only content is its motion, so stopped it is a stray brass line —
+     the words already say what it was saying. */
+  @media (prefers-reduced-motion: reduce) {
+    .veil__bar { display: none; }
+  }
+
+  /* --- the plate under the picture --------------------------------------- */
+
   .stage__bar {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
-    gap: 1rem;
-    padding: 0.6rem 0.2rem 0.1rem;
+    gap: clamp(0.8rem, 2vw, 1.8rem);
+    padding: 0.75rem 0.15rem 0.1rem;
   }
-  .stage__bar .chip { cursor: pointer; font-family: var(--mark); }
+  /*
+   * This line is the site's strongest engineering claim, so it is set in the
+   * reading face rather than in metadata mono — uppercase mono at caption size
+   * reads as a technical footnote whatever it says.
+   */
+  .vouch {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.4rem 0.6rem;
+    margin: 0;
+    max-width: 82ch;
+  }
+  .vouch__shield { flex: none; transform: translateY(2px); }
+  .vouch__cue { color: var(--brass-lit); }
+  .vouch__say {
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: rgba(244, 232, 207, 0.74);
+  }
+  .vouch__say code {
+    font-family: var(--mark);
+    font-size: 0.82em;
+    padding: 0.05em 0.3em;
+    background: rgba(192, 138, 52, 0.14);
+    color: var(--brass-lit);
+  }
+
+  .stage__acts { display: flex; align-items: center; gap: 0.5rem; flex: none; }
+  .stage__acts .chip { cursor: pointer; font-family: var(--mark); }
 
   .prose { margin: 2.6rem 0; transform: rotate(-0.25deg); }
   .prose :global(ul) { padding-left: 1.15rem; }
@@ -214,5 +538,19 @@ const posted = d.posted.toLocaleDateString('en-GB', {
     .head { grid-template-columns: 1fr; align-items: start; }
     .head__meta { justify-items: start; }
     .tags { justify-content: flex-start; }
+    /* Stacked, the plate's sentence needs the full width and the controls read
+       better as a row beneath it than as a squeezed column beside it. */
+    .stage__bar { flex-direction: column; align-items: stretch; }
+    /*
+     * A 16:9 well is only about 210px tall on a phone, and the well clips. The
+     * arms go, the copy tightens and the failure controls shrink so that even
+     * the tallest state — the one with two buttons in it — still fits inside
+     * the picture rather than being cut off by its edge.
+     */
+    .veil { padding: 0.9rem; }
+    .veil__arms { display: none; }
+    .veil__wait, .veil__fail { gap: 0.55rem; }
+    .veil__say { font-size: 0.86rem; }
+    .veil__acts .btn { padding: 0.5rem 0.85rem; font-size: 0.72rem; letter-spacing: 0.1em; }
   }
 </style>

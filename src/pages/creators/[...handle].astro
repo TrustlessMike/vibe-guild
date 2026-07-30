@@ -24,20 +24,69 @@ const d = creator.data;
 const { Content } = await render(creator);
 
 const arms = blazon(creator.id, d.crest ?? {});
-const rank = rankFor(works.length);
 const joined = d.joined.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+/*
+ * A member may file front matter and no prose — the schema permits it — and an
+ * empty slab of parchment between the charter and the board reads as a fault.
+ * `undefined` means the loader handed us no body at all rather than an empty
+ * one, in which case render it and let whatever is there speak.
+ */
+const hasScroll = creator.body === undefined || creator.body.trim() !== '';
+
+/**
+ * The ladder, probed out of `rankFor` rather than restated here. The thresholds
+ * are that function's business, and a second copy of them would drift the day
+ * one of them moved. The top rank never changes again once it is reached, so the
+ * probe always terminates well inside its bound.
+ */
+const rungs: { rank: string; at: number }[] = [];
+for (let n = 0; n <= works.length + 64; n++) {
+  const r = rankFor(n);
+  if (r !== rungs.at(-1)?.rank) rungs.push({ rank: r, at: n });
+}
+const rank = rankFor(works.length);
+const step = rungs.findIndex((r) => r.rank === rank);
+const next = rungs[step + 1];
+
+const tally =
+  works.length === 0
+    ? 'Nothing on the board yet'
+    : works.length === 1
+      ? 'One commission on the board'
+      : `${works.length} commissions on the board`;
+const owed = next ? next.at - works.length : 0;
+const toGo = !next
+  ? 'the top of the roll'
+  : works.length === 0
+    ? `the first earns ${next.rank}`
+    : owed === 1
+      ? `one more earns ${next.rank}`
+      : `${owed} more earn ${next.rank}`;
 ---
 
 <Hall title={d.name} description={d.bio ?? `${d.name} of The Vibe Guild`}>
   <article class="member">
     <header class="charter sheet rise">
       <span class="pin" aria-hidden="true"></span>
+
+      <!--
+        The crest is decorative here and nowhere else: the blazon under it is now
+        visible text rather than a `title` attribute no keyboard or touch user
+        could reach, so labelling the shield as well would read the same
+        sentence out twice.
+      -->
       <div class="charter__arms">
-        <Crest handle={creator.id} size={132} overrides={d.crest ?? {}} />
+        <Crest handle={creator.id} size={184} overrides={d.crest ?? {}} title={false} />
+        <dl class="charter__blazon">
+          <dt>Blazon</dt>
+          <dd>{arms.text}</dd>
+        </dl>
+        <a class="charter__how" href="/arms">How these are made →</a>
       </div>
 
       <div class="charter__text">
-        <p class="mark">{rank} · joined {joined}{d.location ? ` · ${d.location}` : ''}</p>
+        <p class="mark">@{creator.id}</p>
         <h1>{d.name}</h1>
         {d.title && <p class="charter__role">{d.title}</p>}
         {d.bio && <p class="lede">{d.bio}</p>}
@@ -51,23 +100,32 @@ const joined = d.joined.toLocaleDateString('en-GB', { month: 'long', year: 'nume
         )}
       </div>
 
-      <p class="charter__blazon mark" title="The member's arms, generated from their handle">
-        {arms.text}
-      </p>
+      <footer class="standing">
+        <div class="standing__rank">
+          <p class="standing__name carve">{rank}</p>
+          <ol class="standing__rungs" aria-hidden="true">
+            {rungs.map((_, i) => <li data-earned={i <= step ? '' : undefined}></li>)}
+          </ol>
+        </div>
+        <p class="standing__earned">{tally} — {toGo}.</p>
+        <p class="mark standing__where">Joined {joined}{d.location ? ` · ${d.location}` : ''}</p>
+      </footer>
     </header>
 
-    <div class="sheet leaf illuminate member__scroll"><Content /></div>
+    {hasScroll && <div class="sheet leaf illuminate member__scroll"><Content /></div>}
 
     <div class="rule"><span></span></div>
 
-    <section>
-      <h2>{works.length === 1 ? 'One commission' : `${works.length} commissions`}</h2>
+    <section class="works">
+      <h2>Commissions</h2>
       {works.length ? (
-        <div class="board" style="margin-top:1.4rem">
+        <div class="board" style={`--plates:${Math.min(works.length, 4)}`}>
           {works.map((p: any) => <Notice project={p} />)}
         </div>
       ) : (
-        <p class="lede">Nothing posted to the board yet.</p>
+        <p class="lede">
+          Nothing on the board yet. <a href="/submit">Post the first one</a>.
+        </p>
       )}
     </section>
   </article>
@@ -75,6 +133,9 @@ const joined = d.joined.toLocaleDateString('en-GB', { month: 'long', year: 'nume
 
 <style>
   .member { padding: clamp(1.6rem, 5vw, 3.2rem) 0 0; }
+  /* The board brings 1rem of its own padding; this puts the heading at the same
+     remove from its cards that the home page's section headers keep. */
+  .works h2 { margin-bottom: 0.5rem; }
 
   .charter {
     max-width: 58rem;
@@ -86,6 +147,9 @@ const joined = d.joined.toLocaleDateString('en-GB', { month: 'long', year: 'nume
     transform: rotate(-0.4deg);
   }
   .charter__text > * + * { margin-top: 0.6rem; }
+  /* A name is submitted content and can be one unbroken word longer than the
+     column; it has to break rather than run off the edge of the parchment. */
+  .charter h1 { overflow-wrap: break-word; }
   .charter__role {
     font-family: var(--carve);
     letter-spacing: 0.08em;
@@ -93,18 +157,98 @@ const joined = d.joined.toLocaleDateString('en-GB', { month: 'long', year: 'nume
     font-size: 1rem;
     margin: 0;
   }
-  /* The blazon, written under the arms the way a herald would record it. */
+  /* --ink-faint is 4.4:1 on parchment, which does not clear AA at the 0.71rem
+     .mark size. Two classes plus the element, so this beats `.sheet .mark`
+     without depending on which stylesheet the bundler emits first. */
+  .charter p.mark { color: var(--ink-soft); }
+
+  /*
+   * The arms are the one thing on this page nobody else has, so they get a
+   * column of their own and are drawn at the size that lets the charge read.
+   * The blazon sits under them the way a herald records a plate: it used to run
+   * the full width of the sheet, where it read as a footnote to the page rather
+   * than as a description of the shield above it.
+   */
+  .charter__arms { width: clamp(7.25rem, 22vw, 11.5rem); }
+  .charter__arms :global(svg) { width: 100%; height: auto; }
   .charter__blazon {
-    grid-column: 1 / -1;
-    margin: 0.3rem 0 0;
-    padding-top: 1rem;
+    margin: 0.9rem 0 0;
+    padding-top: 0.8rem;
     border-top: 1px solid rgba(122, 88, 44, 0.36);
-    color: var(--ink-faint);
+  }
+  .charter__blazon dt {
+    font-family: var(--mark);
+    font-size: 0.64rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .charter__blazon dd {
+    margin: 0.4rem 0 0;
+    font-size: 0.86rem;
     font-style: italic;
-    text-transform: none;
-    letter-spacing: 0.02em;
-    font-family: var(--read);
-    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+  /* The generator has a reference sheet and nothing linked to it. */
+  .charter__how {
+    display: inline-block;
+    margin-top: 0.7rem;
+    font-family: var(--mark);
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  /*
+   * The third beat. Rank is the only thing on this page the member had to earn,
+   * and it was the first item of a three-item comma list set in 11px mono —
+   * behind the join date in visual weight. It closes the charter instead: the
+   * rung reached, the ladder it sits on, and what the next rung costs.
+   */
+  .standing {
+    grid-column: 1 / -1;
+    margin-top: 0.4rem;
+    padding-top: clamp(1.1rem, 3vw, 1.5rem);
+    border-top: 1px solid rgba(122, 88, 44, 0.36);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.35rem 1.5rem;
+  }
+  .standing__rank { display: flex; align-items: center; gap: 0.85rem; }
+  /* Ranks are set as inscriptions everywhere on the site, and uppercase Cinzel
+     needs more air than the mixed-case tracking the scale carries. */
+  .standing__name {
+    margin: 0;
+    font-size: var(--f-h3);
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+  /* One notch per rung, in the same lozenge the brass rules carry, so standing
+     reads as hardware struck into the sheet rather than as a progress bar. */
+  .standing__rungs { display: flex; gap: 0.42rem; margin: 0; padding: 0; list-style: none; }
+  .standing__rungs li {
+    width: 7px;
+    height: 7px;
+    transform: rotate(45deg);
+    border: 1px solid rgba(122, 88, 44, 0.6);
+  }
+  .standing__rungs li[data-earned] { background: #8a2f1d; border-color: #8a2f1d; }
+  .standing__earned {
+    grid-column: 1;
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    max-width: 46ch;
+  }
+  .standing__where {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: end;
+    margin: 0;
+    text-align: right;
   }
 
   .links { list-style: none; display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0; margin: 1.1rem 0 0; }
@@ -118,7 +262,22 @@ const joined = d.joined.toLocaleDateString('en-GB', { month: 'long', year: 'nume
 
   .member__scroll { margin: 1.8rem 0 0; max-width: 58rem; transform: rotate(0.25deg); }
 
+  /*
+   * A member with one commission had their single notice stretched to the width
+   * of the hall, where it stopped reading as a card pinned up among others.
+   * `auto-fit` looks like the fix and is not: it is the definite track maximum
+   * that caps a lone card, and the repetition count is then taken from that
+   * maximum rather than the minimum, which costs a column at every other count.
+   * The number of notices is known at build time instead. Two classes, so this
+   * outranks `.board` whichever order the two stylesheets land in.
+   */
+  .member .board { max-width: calc(var(--plates) * 24rem); }
+
   @media (max-width: 720px) {
     .charter { grid-template-columns: 1fr; justify-items: start; }
+    /* Stacked, the shield has the whole column to itself and can afford more. */
+    .charter__arms { width: min(48%, 10rem); }
+    .standing { grid-template-columns: 1fr; }
+    .standing__where { grid-column: 1; grid-row: auto; text-align: left; }
   }
 </style>

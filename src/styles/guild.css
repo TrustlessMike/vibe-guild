@@ -164,12 +164,26 @@ p { margin: 0 0 1em; max-width: var(--measure); }
 a { color: var(--brass-lit); text-underline-offset: 3px; text-decoration-color: rgba(240, 205, 133, 0.35); }
 a:hover { color: var(--brass-hi); }
 
+/*
+ * The mark's colour travels by inherited property, not by a descendant rule.
+ *
+ * Brass was 5.4:1 on flat plank but the candle pools use
+ * `background-attachment: fixed`, so any mark can drift under one — and on lit
+ * ground brass falls to about 3.6:1 at 0.71rem, under AA. --vellum-edge is
+ * 8.1:1 on the wall and 7.2:1 on the beam.
+ *
+ * But it is 1.88:1 on parchment, which is WORSE than the brass it replaces, so
+ * the light-ground case has to be airtight. `.sheet .mark` would do it for
+ * today's markup and fail silently the moment anyone builds a parchment panel
+ * that is not a `.sheet` — so the surface declares the ink instead, and every
+ * mark inside it inherits. A new light surface opts in with one line.
+ */
 .mark {
   font-family: var(--mark);
   font-size: 0.71rem;
   letter-spacing: 0.19em;
   text-transform: uppercase;
-  color: var(--brass);
+  color: var(--mark-ink, var(--vellum-edge));
 }
 /* A lede is longer-lined than body but must not run to the same measure, or
    only its weight distinguishes it from the paragraph beneath. */
@@ -187,6 +201,8 @@ a:hover { color: var(--brass-hi); }
 .sheet {
   position: relative;
   color: var(--ink);
+  /* Declared by the surface so every `.mark` inside inherits it — see .mark. */
+  --mark-ink: var(--ink-soft);
   background-color: var(--vellum);
   background-image:
     radial-gradient(80% 55% at 18% 8%, rgba(255, 255, 255, 0.5), transparent 60%),
@@ -631,4 +647,102 @@ img { max-width: 100%; height: auto; }
   font-size: 0.78rem;
   line-height: 1.7;
   padding: 0;
+}
+
+/* ==========================================================================
+   Merged from the five design passes. Append at the END of guild.css — two
+   rules here rely on landing after the ones they supersede.
+   ========================================================================== */
+
+/*
+ * Three literals that were each written in more than one file, so none of them
+ * could be shifted without hunting for it.
+ *
+ * --rubric is the site's illumination colour: the drop cap here, .hero__accent
+ * on the home page, the step numerals and panel rules on /submit, the earned
+ * rungs on a member page. Measured as text, not ornament: 6.9:1 on --vellum,
+ * 5.1:1 on --vellum-deep. Deliberately not --wax, which is the seals' brighter,
+ * bluer red and should stay its own token.
+ *
+ * --ink-link is the parchment link brown, already spelled out twice in
+ * `.sheet a` and needed a third time by the notice's "open" cue.
+ *
+ * --board-gap is arithmetic as well as space: /projects derives its grid track
+ * width from it, so the two must not be able to drift apart.
+ *
+ * Every consumer reads these with a fallback (`var(--rubric, #8a2f1d)`), so
+ * nothing breaks if this block lands without the hand edits below it.
+ */
+:root {
+  --rubric: #8a2f1d;
+  --ink-link: #7a3a12;
+  --board-gap: clamp(1.6rem, 2.6vw, 2.6rem);
+}
+
+/*
+ * `.sheet a` is (0,1,1) and silently outranks `.btn`'s own (0,1,0) colour, so
+ * every solid brass button standing on parchment renders its label in link
+ * brown: 3.5:1 at the gradient's midline and 2.8:1 over the lower --brass stop,
+ * against 5.5:1 for the ink the component was designed with. That is the
+ * primary call to action on /submit and in the home hero. The ghost variant has
+ * no brass under it, so it keeps the link brown it was already getting by
+ * accident — pinned here so the fix above cannot hand it dark-on-parchment.
+ */
+.sheet .btn { color: #2a1c08; }
+.sheet .btn--ghost { color: var(--ink-link); }
+
+/*
+ * The beam is sticky, so an in-page anchor — the new skip link, a tag jump —
+ * lands underneath it. Both values are deliberately generous rather than
+ * measured: overshoot only adds air above the target, undershoot hides the
+ * heading, and the stacked nav wraps to two or three rows on a phone. The
+ * breakpoint matches Hall.astro's stacking breakpoint so they move together.
+ */
+html { scroll-padding-top: 4.75rem; }
+@media (max-width: 760px) {
+  html { scroll-padding-top: 9rem; }
+}
+
+/* --------------------------------------------------------------------------
+   Focus is hardware, not a recoloured default ring.
+
+   One brass ring cannot serve both grounds. To clear 3:1 against parchment
+   (L 0.814) a colour needs L <= 0.238; to clear it against the candle-lit beam
+   (L 0.045) it needs L >= 0.235. That window is a hundredth wide, so no single
+   value is robust — hence two: the dark backing fills the outline's offset and
+   carries the 3:1 on any ground, the brass carries the visibility.
+
+   Supersedes the `:focus-visible` rule near the end of the file; delete that
+   one rather than leaving it to lose on source order.
+   -------------------------------------------------------------------------- */
+:focus-visible {
+  outline: 2px solid var(--brass-lit);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 7px rgba(13, 9, 6, 0.82);
+}
+
+/* These two model themselves with box-shadow, so the backing has to be appended
+   to what they already paint rather than replacing it. */
+.btn:focus-visible {
+  box-shadow:
+    0 1px 0 rgba(255, 245, 220, 0.85) inset,
+    0 -2px 6px rgba(90, 58, 12, 0.55) inset,
+    0 14px 28px -14px rgba(0, 0, 0, 0.92),
+    0 0 0 7px rgba(13, 9, 6, 0.82);
+}
+.plaque:focus-visible {
+  box-shadow:
+    0 1px 0 rgba(240, 205, 133, 0.14) inset,
+    0 14px 26px -18px rgba(0, 0, 0, 0.9),
+    0 0 0 7px rgba(13, 9, 6, 0.82);
+}
+
+/* A board card's focus indicator was `outline: none` plus the hover lift, which
+   is nothing at all to anyone who cannot perceive the lift — and nothing to
+   anyone at all under prefers-reduced-motion, where the lift is disabled. Ties
+   on specificity with the rule that removes the outline, so it must stay after
+   it. The wider offset clears the wax seal straddling the sheet's top edge. */
+.notice:focus-visible {
+  outline: 2px solid var(--brass-lit);
+  outline-offset: 4px;
 }

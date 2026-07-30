@@ -56,6 +56,11 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
   </head>
 
   <body>
+    <a class="skip" href="#main">Skip to the hall</a>
+    <!-- Watched instead of the scroll position, so the beam's shadow costs no
+         scroll handler. -->
+    <div class="beam-mark" aria-hidden="true"></div>
+
     <header class="topbar">
       <div class="hall topbar__in">
         <a href="/" class="brand" aria-label="The Vibe Guild, home">
@@ -77,13 +82,15 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
             </a>
           ))}
           <a class="nav__link nav__link--out" href="https://github.com/TrustlessMike/vibe-guild">
-            GitHub ↗
+            GitHub <span aria-hidden="true">↗</span>
           </a>
         </nav>
       </div>
     </header>
 
-    <main class={wide ? '' : 'hall'}>
+    <!-- Focusable, or the skip link only scrolls and leaves focus in the beam —
+         which is no use to the one person who pressed it. -->
+    <main id="main" tabindex="-1" class={wide ? '' : 'hall'}>
       <slot />
     </main>
 
@@ -97,14 +104,14 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
             Every member and every commission on this board is a file in a public
             repository — fork it, host your own hall, take the whole thing with you.
           </p>
-          <p class="mark">Free &amp; open source · MIT</p>
+          <p class="mark foot__licence">Free &amp; open source · MIT</p>
         </div>
       </div>
     </footer>
 
     <style>
-      /* A carved beam across the top of the hall: timber, an iron underside
-         and a brass edge catching the candles. */
+      /* A carved beam across the top of the hall: timber, an iron-shod lower
+         edge and a brass rail catching the candles. */
       .topbar {
         position: sticky;
         top: 0;
@@ -119,53 +126,189 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
             rgba(0,0,0,.1) 0 4px, transparent 4px 11px, rgba(255,214,160,.02) 11px 13px),
           linear-gradient(180deg, #3a2716 0%, #2b1d11 62%, #170f08 100%);
         border-bottom: 2px solid rgba(0, 0, 0, 0.7);
+        /*
+         * Two shadow states, because a beam with nothing beneath it has nothing
+         * to cast onto. At the top of the page the deep cast read as a permanent
+         * dark band under the header — a graphic device. It only becomes a
+         * shadow once page content is actually passing underneath.
+         */
         box-shadow:
           0 1px 0 rgba(240, 205, 133, 0.28) inset,
-          0 14px 30px -12px rgba(0, 0, 0, 0.85);
+          0 3px 7px -3px rgba(0, 0, 0, 0.6),
+          0 18px 34px -14px rgba(0, 0, 0, 0.9);
+        transition: box-shadow 300ms cubic-bezier(.22, 1, .36, 1);
+      }
+      /* Absent JS the attribute is never set, so the cast shadow above stands. */
+      .topbar[data-rest] {
+        box-shadow:
+          0 1px 0 rgba(240, 205, 133, 0.28) inset,
+          0 4px 10px -8px rgba(0, 0, 0, 0.65);
       }
       .topbar::after {
         content: '';
         position: absolute;
         left: 0; right: 0; bottom: -2px;
         height: 2px;
-        background: linear-gradient(90deg, transparent, rgba(192,138,52,.75) 12%, rgba(240,205,133,.9) 50%, rgba(192,138,52,.75) 88%, transparent);
+        /* A catch of candlelight along the rail, not a printed rule: it fades
+           out well before the ends so the beam reads as lit, not as bordered. */
+        background: linear-gradient(90deg,
+          transparent, rgba(192,138,52,.34) 18%, rgba(240,205,133,.72) 50%, rgba(192,138,52,.34) 82%, transparent);
       }
       .topbar__in {
         display: flex; align-items: center; justify-content: space-between;
         gap: 1.5rem; padding: 0.95rem 0;
       }
+      .beam-mark { position: absolute; top: 0; left: 0; width: 1px; height: 1px; }
+
       .brand { display: inline-flex; align-items: center; gap: 0.7rem; text-decoration: none; color: var(--vellum); }
       .brand__shield { filter: drop-shadow(0 3px 7px rgba(0,0,0,.75)); }
       .brand__word {
-        font-family: var(--carve); font-weight: 800; font-size: 1.02rem;
+        font-family: var(--carve); font-weight: 800; font-size: 1.04rem;
         letter-spacing: 0.19em; text-transform: uppercase;
         text-shadow: 0 2px 3px rgba(0,0,0,.8);
       }
-      .nav { display: flex; align-items: center; gap: clamp(0.7rem, 2vw, 1.8rem); flex-wrap: wrap; }
+
+      /*
+       * The nav is carved, not recorded. Mono is this hall's voice for facts of
+       * record — dates, counts, licences, code — and a way-sign on a beam is
+       * signage, cut by the same hand that cut the wordmark. Cinzel one step
+       * down in size and weight from the wordmark keeps the hierarchy.
+       *
+       * Colours are solid rather than vellum-at-an-alpha: the candle gradients
+       * under the beam lift the local ground from L=0.014 to L=0.045, which
+       * costs about a third of the available contrast, and only a fixed value
+       * can be measured against the lit patch instead of the flat timber.
+       * #d9cbae is 6.9:1 there, #c7b795 is 5.6:1 — both clear AA at these sizes.
+       */
+      .nav { display: flex; align-items: center; gap: clamp(0.7rem, 2vw, 1.7rem); flex-wrap: wrap; }
       .nav__link {
-        font-family: var(--mark); font-size: 0.71rem; letter-spacing: 0.16em;
-        text-transform: uppercase; color: rgba(244, 232, 207, 0.62);
-        text-decoration: none; padding: 0.32rem 0;
-        border-bottom: 1px solid transparent; white-space: nowrap;
+        font-family: var(--carve); font-weight: 600;
+        font-size: 0.78rem; letter-spacing: 0.12em;
+        text-transform: uppercase; color: #d9cbae;
+        text-decoration: none; padding: 0.34rem 0;
+        border-bottom: 2px solid transparent; white-space: nowrap;
         text-shadow: 0 1px 2px rgba(0,0,0,.7);
+        transition: color 160ms, border-color 160ms;
       }
-      .nav__link:hover { color: var(--brass-hi); border-bottom-color: rgba(192,138,52,.6); }
-      .nav__link[aria-current='page'] { color: var(--brass-lit); border-bottom-color: var(--brass); }
-      .nav__link--out { color: rgba(244, 232, 207, 0.38); }
+      .nav__link:hover { color: var(--brass-hi); border-bottom-color: rgba(192,138,52,.65); }
+      .nav__link[aria-current='page'] {
+        color: var(--brass-lit);
+        border-bottom-color: var(--brass);
+        /* The current page is incised into the beam: a lit rail with the dark
+           of the cut showing under it. */
+        box-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+      }
+      /*
+       * The repository IS a fact of record, so it keeps mono — that is what
+       * separates it from the three way-signs now that they are carved. It was
+       * vellum at 0.38 alpha, which composites to about 2.6:1 on the beam.
+       */
+      .nav__link--out {
+        font-family: var(--mark); font-weight: 500;
+        font-size: 0.68rem; letter-spacing: 0.14em;
+        color: #c7b795; border-bottom-width: 1px;
+      }
+
+      /*
+       * A designed ring rather than the recoloured default. The beam is lit
+       * unevenly, so brass alone cannot be relied on: the dark backing fills the
+       * outline's offset and carries the 3:1 against whatever the timber is
+       * doing at that point, and the brass carries the visibility.
+       */
+      .brand:focus-visible,
+      .nav__link:focus-visible {
+        outline: 2px solid var(--brass-lit);
+        outline-offset: 4px;
+        box-shadow: 0 0 0 7px rgba(13, 9, 6, 0.82);
+        color: var(--brass-hi);
+      }
+
+      /* Reachable only by keyboard, and only until it is used. */
+      .skip {
+        position: fixed;
+        top: 0; left: 50%;
+        z-index: 70;
+        transform: translate(-50%, -110%);
+        padding: 0.62rem 1.3rem;
+        font-family: var(--mark); font-size: 0.68rem;
+        letter-spacing: 0.16em; text-transform: uppercase;
+        color: #2a1c08; text-decoration: none;
+        background: linear-gradient(180deg, var(--brass-lit), var(--brass));
+        box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.9);
+        transition: transform 180ms cubic-bezier(.22, 1, .36, 1);
+      }
+      .skip:focus-visible {
+        transform: translate(-50%, 0);
+        /* Inside the plate: a brass ring on brass would be invisible. */
+        outline: 2px solid #2a1c08;
+        outline-offset: -6px;
+      }
 
       /* The oath, on parchment nailed to the wall at the end of the hall. */
       .foot { margin-top: clamp(4rem, 10vw, 8rem); padding: 0 0 4rem; }
       .foot__sheet {
-        max-width: 64ch;
+        /* The sheet sets the measure, so the oath cannot outrun it: 62ch of
+           sheet less its padding lands the text at ~57 real characters. */
+        max-width: 62ch;
         margin-inline: auto;
-        padding: 2rem 2.2rem 2.2rem;
-        text-align: center;
+        padding: 1.9rem 2.2rem 1.7rem;
         transform: rotate(-0.35deg);
       }
-      .foot__oath { margin: 0 auto 0.9rem; color: var(--ink-soft); font-size: 0.97rem; }
-      @media (max-width: 640px) {
-        .topbar__in { flex-direction: column; align-items: flex-start; gap: 0.55rem; }
+      /*
+       * Left-ranged, not centred. Four lines of centred prose gives four
+       * different left edges and no entry point for the eye — and this is the
+       * one paragraph on the site that states what the Guild is for, so it is
+       * set in full ink rather than the softer secondary tone.
+       */
+      .foot__oath {
+        margin: 0.5rem 0 1.25rem;
+        color: var(--ink);
+        font-size: var(--f-body);
+        line-height: 1.62;
+        text-wrap: pretty;
+      }
+      /* --ink-faint is 4.4:1 on parchment, which does not clear AA at the
+         0.71rem .mark size. */
+      .foot__sheet p.mark { color: var(--ink-soft); }
+      .foot__licence {
+        margin: 0;
+        padding-top: 0.85rem;
+        border-top: 1px solid rgba(122, 88, 44, 0.32);
+      }
+
+      /* Cinzel sets wider than mono, so the beam runs out of room sooner. */
+      @media (max-width: 1040px) {
+        .nav { gap: clamp(0.6rem, 1.7vw, 1.1rem); }
+        .nav__link { font-size: 0.73rem; letter-spacing: 0.09em; }
+        .nav__link--out { font-size: 0.65rem; letter-spacing: 0.11em; }
+      }
+      @media (max-width: 760px) {
+        .topbar__in {
+          flex-direction: column; align-items: flex-start;
+          gap: 0.45rem; padding: 0.75rem 0 0.85rem;
+        }
+        .nav { row-gap: 0.1rem; }
+        /* Stacked, the links are the tap targets rather than one row of text. */
+        .nav__link { padding: 0.5rem 0; }
+        .foot__sheet { padding: 1.6rem 1.5rem 1.4rem; }
       }
     </style>
+
+    <script is:inline>
+      // The beam's cast shadow belongs to whatever is passing under it, so it is
+      // suppressed while the page is at rest at the top. IntersectionObserver on
+      // a 1px mark at the document's origin, rather than a scroll listener.
+      (function () {
+        var beam = document.querySelector('.topbar');
+        var mark = document.querySelector('.beam-mark');
+        if (!beam || !mark || !('IntersectionObserver' in window)) return;
+        // Measured rather than assumed: a page restored mid-scroll would
+        // otherwise paint the resting shadow until the first callback lands.
+        if (window.scrollY < 1) beam.setAttribute('data-rest', '');
+        new IntersectionObserver(function (entries) {
+          beam.toggleAttribute('data-rest', entries[0].isIntersecting);
+        }).observe(mark);
+      })();
+    </script>
   </body>
 </html>

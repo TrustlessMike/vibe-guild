@@ -13,6 +13,35 @@ const roster = creators
     n: projects.filter((p) => p.data.by.some((r: any) => r.id === c.id)).length,
   }))
   .sort((a, b) => b.n - a.n || a.c.data.name.localeCompare(b.c.data.name));
+
+/**
+ * The ladder, probed out of `rankFor` rather than restated here: the roll has to
+ * name the same gates that function enforces, and a second copy of its
+ * thresholds would drift the day one of them moved. The top rank never changes
+ * again once it is reached, so the probe always terminates inside its bound.
+ */
+const rungs: { rank: string; at: number }[] = [];
+for (let n = 0; n <= (roster[0]?.n ?? 0) + 64; n++) {
+  const r = rankFor(n);
+  if (r !== rungs.at(-1)?.rank) rungs.push({ rank: r, at: n });
+}
+
+/*
+ * The roll is the ladder, read from the top down. Rank was a trailing label in
+ * a comma list on every plate, which is a strange way to present the one thing
+ * here that has to be earned — as the structure of the page it needs no label
+ * at all. Ranks nobody holds are left out rather than shown standing empty.
+ */
+const roll = rungs
+  .map(({ rank, at }) => ({
+    rank,
+    members: roster.filter((m) => rankFor(m.n) === rank),
+    // "From", because the gate and a member's own tally are otherwise the same
+    // words at the bottom of the ladder and the reader cannot tell which is which.
+    gate: at === 0 ? 'Yet to post' : `From ${at} commission${at === 1 ? '' : 's'}`,
+  }))
+  .filter((g) => g.members.length > 0)
+  .reverse();
 ---
 
 <Hall title="The Roster">
@@ -25,31 +54,92 @@ const roster = creators
     </p>
   </section>
 
-  <ul class="roll">
-    {roster.map(({ c, n }) => (
-      <li class="roll__item">
-        <a class="plaque" href={`/creators/${c.id}`}>
-          <Crest handle={c.id} size={72} overrides={c.data.crest ?? {}} title={false} />
-          <div class="plaque__who">
-            <strong>{c.data.name}</strong>
-            {c.data.title && <span class="plaque__role">{c.data.title}</span>}
-            <span class="rank">{rankFor(n)} · {n === 1 ? '1 commission' : `${n} commissions`}</span>
-          </div>
-        </a>
-      </li>
-    ))}
-  </ul>
-
-  {roster.length === 0 && (
+  {roll.length === 0 ? (
     <p class="lede">No members yet. The first one sets the tone.</p>
+  ) : (
+    roll.map((g, i) => (
+      <section class:list={['roll', i === 0 && 'roll--first']}>
+        <div class="rule">
+          <div class="roll__title">
+            <h2>{g.rank}</h2>
+            <p class="mark">{g.gate}</p>
+          </div>
+        </div>
+
+        <ul class="roll__list" style={`--plates:${Math.min(g.members.length, 4)}`}>
+          {g.members.map(({ c, n }) => (
+            <li>
+              <a class="plaque" href={`/creators/${c.id}`}>
+                <Crest handle={c.id} size={72} overrides={c.data.crest ?? {}} title={false} />
+                <div class="plaque__who">
+                  <strong>{c.data.name}</strong>
+                  {c.data.title && <span class="plaque__role">{c.data.title}</span>}
+                  <span class="mark plaque__tally">{n === 1 ? 'One commission' : `${n} commissions`}</span>
+                </div>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
+    ))
   )}
 </Hall>
 
 <style>
-  .roll {
-    list-style: none; padding: 0; margin: 0;
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-    gap: 1rem;
+  /*
+   * The carved rule's own margins are symmetrical, which put more air between a
+   * rank and its own members than between one rank and the next — so each
+   * heading read as the footer of the group above it. All of the space belongs
+   * above.
+   */
+  .roll .rule { margin: clamp(2.6rem, 6vw, 4rem) 0 0; }
+  /* The masthead already sets the space above the first rank. */
+  .roll--first .rule { margin-top: clamp(0.6rem, 2vw, 1.2rem); }
+
+  /* The rank is inscribed into the carved rule that already divides this hall's
+     sections, so a rank reads as the hall's own hardware rather than as another
+     heading competing with the one at the top of the page. */
+  .roll__title { text-align: center; }
+  .roll__title h2 {
+    /* The h3 step of the shared scale: this is a subhead inside a list, not a
+       page-level heading — and uppercase Cinzel needs more air than the
+       mixed-case tracking the scale carries. */
+    font-size: var(--f-h3);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--brass-lit);
+    text-shadow: 0 2px 5px rgba(0, 0, 0, 0.75);
   }
-  .roll__item .plaque { padding: 1.1rem 1.2rem; gap: 1.1rem; }
+  /*
+   * Not --brass. The candle pools are background-attachment: fixed, so anything
+   * can pass under one, and a lit ground costs about a third of the available
+   * contrast: brass measures 3.6:1 on lit timber and 4.3:1 on a lit plaque,
+   * neither of which clears AA at these sizes. --vellum-edge is the dim member
+   * of the wall's own text family and holds 4.8:1 at its worst.
+   */
+  .roll__title p { margin: 0.3rem 0 0; color: var(--vellum-edge); }
+
+  .roll__list {
+    list-style: none;
+    padding: 0;
+    margin: clamp(1rem, 2.5vw, 1.6rem) 0 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    gap: 1rem;
+    /*
+     * A rank held by one member stretched that single plate across the whole
+     * hall — a name plate the size of a banner. `auto-fit` looks like the fix
+     * and is not: a definite maximum on the track is what caps a lone plate,
+     * and the repetition count is then computed from that maximum rather than
+     * the minimum, which quietly costs a column at every other count. The
+     * number of plates is known at build time, so the list is only ever as wide
+     * as the plates it holds, and from four up it fills the hall as before.
+     */
+    max-width: calc(var(--plates) * 22rem);
+  }
+  /* Plates in a row hang to the same depth even when one carries no role. */
+  .roll__list .plaque { padding: 1.1rem 1.2rem; gap: 1.1rem; height: 100%; }
+  /* Brass at this size does not clear AA on a plaque sitting under a candle
+     pool — see the rank inscription above. */
+  .plaque__who .plaque__tally { font-size: 0.64rem; color: var(--vellum-edge); }
 </style>

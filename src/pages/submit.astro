@@ -1,5 +1,17 @@
 ---
+import { getCollection } from 'astro:content';
 import Hall from '../layouts/Hall.astro';
+
+const repo = 'https://github.com/TrustlessMike/vibe-guild';
+
+/**
+ * A finished submission to point at, resolved from the board rather than named
+ * in a string: a link to an example that has since been taken down is worse
+ * than offering no example at all.
+ */
+const exemplar = (await getCollection('projects')).sort(
+  (a, b) => Number(b.data.featured) - Number(a.data.featured),
+)[0];
 
 const creatorFile = `---
 name: Your Name
@@ -9,10 +21,9 @@ location: Anywhere                     # optional
 bio: >
   A sentence or three. Say whatever you like — the Guild does not
   prescribe what a profile should contain.
-links:
+links:                                 # every url must be https:
   - { label: GitHub,  url: https://github.com/yourhandle }
   - { label: Website, url: https://your.site }
-  - { label: Bluesky, url: https://bsky.app/profile/you }
 ---
 
 Anything below the dashes is your page. Markdown. Write as much or as
@@ -20,25 +31,58 @@ little as you want.`;
 
 const projectFile = `---
 title: Your Thing
-kind: game            # or: app
+kind: game               # or: app
 tagline: One line, under 140 characters.
-by: [yourhandle]      # matches src/content/creators/yourhandle.md
+by: [yourhandle]         # matches src/content/creators/yourhandle.md
 posted: 2026-07-24
 tags: [three-js, roguelike]
-cover: ../../assets/your-thing/cover.png    # optional
+cover: ../../assets/your-thing/cover.png   # optional
 play:
-  bundle: your-thing  # the folder you added under apps/
-  aspect: 16 / 9
-source: https://github.com/you/your-thing   # optional
+  bundle: your-thing     # the folder you added under apps/
+  aspect: 16 / 9         # optional — this is the default
+  desktopOnly: true      # set this if it needs a keyboard
+source: https://github.com/you/your-thing  # optional
 license: MIT
 ---
 
 ## What it is
 
 Markdown. Tell people what they are looking at.`;
+
+const hostedElsewhere = `play:
+  url: https://your-thing.example.com   # instead of bundle, never as well as
+  aspect: 4 / 3`;
+
+/**
+ * These samples are the only thing on the page a contributor actually takes
+ * away, so they are worth setting rather than dumping as one undifferentiated
+ * slab of monospace: a key you can pick out at a glance is a key you are less
+ * likely to mistype. Tokenising here costs nothing at runtime — no highlighter
+ * ships to the browser.
+ *
+ * Escaping runs first because the samples contain real YAML that is also real
+ * HTML: `bio: >` is a folded scalar, not a tag.
+ */
+const paint = (src: string) =>
+  src
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    // Comments before keys, so a `# or: app` is never repainted as a mapping.
+    // A comment has to be preceded by space: `## What it is` below the closing
+    // dashes is a markdown heading, and dimming it would say it was ignorable.
+    .replace(/([ \t])(#[^\n]*)/g, '$1<span class="y-dim">$2</span>')
+    .replace(/^(---)$/gm, '<span class="y-dim">$1</span>')
+    .replace(/^([ \t]*(?:- )?)([\w.-]+)(:)/gm, '$1<span class="y-key">$2</span>$3')
+    // Keys inside a flow mapping, e.g. `- { label: GitHub, url: … }`. A bare
+    // `https:` never matches: it follows a space, not a brace or a comma.
+    .replace(/([{,] *)([\w.-]+)(:)/g, '$1<span class="y-key">$2</span>$3');
 ---
 
-<Hall title="Post a Commission">
+<Hall
+  title="Post a Commission"
+  description="How to put your game or app on the Guild's board: fork the hall, add two markdown files, open a pull request. No accounts, no review queue, no cut."
+>
   <section class="masthead rise">
     <p class="mark">How things get onto the board</p>
     <h1>Post a Commission</h1>
@@ -47,58 +91,94 @@ Markdown. Tell people what they are looking at.`;
       its board are just files in a public repository — you add yours with a pull
       request, and when it is merged the hall rebuilds itself.
     </p>
+    <p class="mark">Five steps · two markdown files · one folder</p>
   </section>
 
-  <ol class="steps">
+  <ol class="steps" role="list">
     <li class="step sheet">
       <span class="pin" aria-hidden="true"></span>
-      <span class="step__n">I</span>
       <div>
         <h2>Fork the hall</h2>
         <p>
-          Fork <a href="https://github.com/TrustlessMike/vibe-guild">the repository</a>,
-          then <code>npm install &amp;&amp; npm run dev</code> to see your changes
-          locally before you send them.
+          Take your own copy, then <code>npm install</code> and
+          <code>npm run dev</code> — that raises the hall on <code>:4321</code>
+          and a second server for submissions on <code>:4322</code>.
         </p>
+        <p>
+          Point the hall at that second server with a one-line
+          <code>.env</code> holding
+          <code>PUBLIC_APPS_ORIGIN=http://localhost:4322</code>, and your machine
+          behaves exactly as production does — two origins, sandbox and all.
+          Without it the hall serves submissions itself, which is safe but costs
+          your app the storage explained in step III.
+        </p>
+        <a class="btn" href={`${repo}/fork`}>Fork the repository ↗</a>
       </div>
     </li>
 
     <li class="step sheet">
       <span class="pin" aria-hidden="true"></span>
-      <span class="step__n">II</span>
       <div>
         <h2>Claim your arms</h2>
         <p>
-          Add <code>src/content/creators/&lt;yourhandle&gt;.md</code>. Your handle is
-          the filename, and it is also the seed for your coat of arms — you get a
-          unique one automatically, so there is no avatar to upload.
+          Add <code>src/content/creators/&lt;yourhandle&gt;.md</code>. The filename
+          is your handle, and it is also the seed for your coat of arms — you get
+          a unique one automatically, so there is no avatar to upload.
         </p>
-        <pre><code>{creatorFile}</code></pre>
+        <figure class="snippet">
+          <figcaption>
+            <span class="snippet__name">src/content/creators/yourhandle.md</span>
+            <button class="snippet__copy" type="button" aria-live="polite" hidden>Copy</button>
+          </figcaption>
+          <pre><code set:html={paint(creatorFile)}></code></pre>
+        </figure>
+        <p class="after">
+          Rather draw your own? A <code>crest:</code> block with any of
+          <code>field</code>, <code>charge</code> or <code>division</code>
+          overrides the generated one; the options are listed in
+          <code>src/lib/crest.ts</code>.
+        </p>
       </div>
     </li>
 
     <li class="step sheet">
       <span class="pin" aria-hidden="true"></span>
-      <span class="step__n">III</span>
       <div>
         <h2>Bring the thing itself</h2>
         <p>
           Build your project to static files and commit the output as
           <code>apps/&lt;slug&gt;/</code>, with an <code>index.html</code> at its
-          root. It is served from a separate origin and framed with
-          <code>allow-scripts</code> and <code>allow-same-origin</code>.
+          root. The repository is the storage — there is nothing else to upload
+          to and nothing to keep paying for.
         </p>
+
+        <section class="grant">
+          <h3 class="grant__mark">Why your code is trusted to run</h3>
+          <p>
+            Submitted work is served from its own origin — a different host from
+            the hall itself. That single fact is what lets the Guild hand a
+            stranger's code real capabilities instead of a crippled frame:
+          </p>
+          <ul class="rules">
+            <li>Your own <strong>localStorage</strong> and IndexedDB, so saves persist between visits.</li>
+            <li>
+              Module scripts, workers and <code>fetch</code> behave normally — the
+              frame carries <strong>allow-same-origin</strong>, and the origin it
+              means is <em>yours</em>.
+            </li>
+            <li>Pointer lock, gamepad, autoplay, fullscreen and downloads, all granted.</li>
+          </ul>
+          <p>
+            None of the Guild's own pages live on that origin, so there is
+            nothing there for a submission to reach. That is why your work can go
+            up and run at full strength without anyone reading it line by line
+            first.
+          </p>
+        </section>
+
         <ul class="rules">
           <li>Keep it under <strong>25&nbsp;MB</strong>. Compress your textures and audio.</li>
           <li>Use <strong>relative paths</strong> — your app is served from a subfolder.</li>
-          <li>
-            You keep your own <code>localStorage</code> — saves work. You cannot
-            reach the Guild's page; the separate origin is what buys you both.
-          </li>
-          <li>
-            Anything needing a server of its own should use <code>play.url</code>
-            to embed from where it already lives.
-          </li>
           <li>It must be yours to publish, and it must not be hostile to whoever runs it.</li>
         </ul>
       </div>
@@ -106,76 +186,295 @@ Markdown. Tell people what they are looking at.`;
 
     <li class="step sheet">
       <span class="pin" aria-hidden="true"></span>
-      <span class="step__n">IV</span>
       <div>
         <h2>Pin it to the board</h2>
         <p>Add <code>src/content/projects/&lt;slug&gt;.md</code>:</p>
-        <pre><code>{projectFile}</code></pre>
-        <p class="note">
-          The schema is checked at build time, so a malformed submission fails
-          in CI rather than landing broken on the board. If it builds, it works.
-        </p>
+        <figure class="snippet">
+          <figcaption>
+            <span class="snippet__name">src/content/projects/your-thing.md</span>
+            <button class="snippet__copy" type="button" aria-live="polite" hidden>Copy</button>
+          </figcaption>
+          <pre><code set:html={paint(projectFile)}></code></pre>
+        </figure>
+
+        <p class="after">Hosted somewhere already? Swap the <code>bundle</code> line for a URL:</p>
+        <figure class="snippet snippet--tight">
+          <figcaption>
+            <span class="snippet__name">…in place of play.bundle</span>
+            <button class="snippet__copy" type="button" aria-live="polite" hidden>Copy</button>
+          </figcaption>
+          <pre><code set:html={paint(hostedElsewhere)}></code></pre>
+        </figure>
+
+        <h3 class="gates">What the schema insists on</h3>
+        <ul class="rules">
+          <li>
+            <strong>Exactly one</strong> of <code>play.bundle</code> or
+            <code>play.url</code>. Both, or neither, fails the build.
+          </li>
+          <li>
+            <code>bundle</code> is a lowercase slug — letters, digits and hyphens —
+            and must match the folder you added under <code>apps/</code>.
+          </li>
+          <li>
+            Every URL in either file must be <strong>https:</strong>.
+            <code>http:</code>, <code>data:</code> and <code>javascript:</code> are
+            refused: a <code>javascript:</code> frame source would inherit the
+            hall's own origin and walk straight out of the sandbox above.
+          </li>
+          <li>
+            <code>desktopOnly: true</code> when the work needs a keyboard or a
+            mouse. Most of the traffic from a shared link is a phone, and it is
+            better to say so than to show it a frame it cannot play.
+          </li>
+          <li>
+            <code>tagline</code> stops at 140 characters, and every handle in
+            <code>by</code> must be a creator file that exists.
+          </li>
+        </ul>
       </div>
     </li>
 
     <li class="step sheet">
       <span class="pin" aria-hidden="true"></span>
-      <span class="step__n">V</span>
       <div>
         <h2>Open the pull request</h2>
+        <p>
+          Run <code>npm run build</code> once first — the schemas are enforced
+          there, so a malformed submission fails on your machine rather than
+          landing broken on the board. If it builds, it works.
+        </p>
         <p>
           That is the whole process. Merged means published. Take it down again
           whenever you like — it is your work, and the Guild claims no part of it.
         </p>
-        <a class="btn" href="https://github.com/TrustlessMike/vibe-guild/fork">Fork and begin</a>
+        <a class="btn" href={`${repo}/compare`}>Open a pull request ↗</a>
+        <p class="also">
+          Or read <a href={`${repo}/blob/main/CONTRIBUTING.md`}>the same thing in the repository</a>{exemplar ? ' · ' : ''}
+          {exemplar && <a href={`/projects/${exemplar.id}`}>see a finished commission</a>}.
+        </p>
       </div>
     </li>
   </ol>
 </Hall>
 
+<script>
+  /*
+   * The buttons ship hidden and are revealed here, so a browser without
+   * clipboard access is never offered a control that cannot do anything. The
+   * copied text is read back out of the rendered sample rather than held in a
+   * second copy of it, which is the only way the two can never drift apart.
+   */
+  if (navigator.clipboard) {
+    document.querySelectorAll('.snippet__copy').forEach((el) => {
+      if (!(el instanceof HTMLButtonElement)) return;
+      el.hidden = false;
+      el.addEventListener('click', async () => {
+        const code = el.closest('.snippet')?.querySelector('code');
+        if (!code) return;
+        try {
+          await navigator.clipboard.writeText(code.textContent ?? '');
+          el.setAttribute('data-done', '');
+          el.textContent = 'Copied';
+          window.setTimeout(() => {
+            el.removeAttribute('data-done');
+            el.textContent = 'Copy';
+          }, 1800);
+        } catch {
+          el.textContent = 'Select and copy';
+        }
+      });
+    });
+  }
+</script>
+
 <style>
-  .steps { list-style: none; padding: 0; margin: 0; display: grid; gap: clamp(1.4rem, 3vw, 2.2rem); }
+  /*
+   * `--rubric` is proposed for the shared sheet; the literal is the fallback so
+   * this page is correct either way. #8a2f1d is 6.9:1 on parchment and 5.1:1 on
+   * the deeper parchment of the versal cell.
+   */
+  .steps {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: clamp(1.4rem, 3vw, 2.2rem);
+    counter-reset: step;
+  }
   .step {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
-    gap: 1.4rem;
+    gap: clamp(1rem, 2.4vw, 1.6rem);
     padding: clamp(1.4rem, 3vw, 2.1rem) clamp(1.4rem, 3vw, 2.2rem);
+    counter-increment: step;
   }
   .step:nth-child(odd) { transform: rotate(-0.3deg); }
   .step:nth-child(even) { transform: rotate(0.35deg); }
-  .step__n {
+
+  /*
+   * An illuminated versal, not a label: the numeral is seated in a panel of
+   * deeper parchment with a bevel, and carries the same brass-highlight-over-
+   * ochre-shade as the drop cap. Counted rather than typed so the sequence
+   * cannot fall out of order when a step is inserted.
+   *
+   * Sized, not squared. `aspect-ratio` would clip "III" if a reader forces a
+   * larger minimum font size; a min-height reads as square at every size the
+   * numerals actually take and simply grows if it has to.
+   */
+  .step::before {
+    content: counter(step, upper-roman);
+    position: relative;
+    z-index: 1;
+    align-self: start;
+    display: grid;
+    place-items: center;
+    width: 3.5rem;
+    min-height: 3.5rem;
+    padding: 0.3rem;
     font-family: var(--carve);
-    font-size: 1.7rem;
     font-weight: 900;
-    color: #8a2f1d;
+    font-size: clamp(1.5rem, 1.25rem + 0.75vw, 1.85rem);
     line-height: 1;
-    padding-top: 0.1rem;
-    min-width: 2ch;
+    letter-spacing: 0.02em;
+    color: var(--rubric, #8a2f1d);
+    background:
+      radial-gradient(78% 66% at 30% 22%, rgba(255, 255, 255, 0.5), transparent 66%),
+      linear-gradient(158deg, var(--vellum-warm), var(--vellum-deep));
+    border: 1px solid rgba(122, 88, 44, 0.45);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.55) inset,
+      0 -8px 14px -9px rgba(120, 84, 36, 0.75) inset;
+    text-shadow:
+      0 1px 0 rgba(240, 205, 133, 0.9),
+      0 2px 0 rgba(122, 88, 44, 0.4);
   }
+
   .step h2 { margin-bottom: 0.55rem; }
   .step p { color: var(--ink-soft); }
+  .step > div > *:last-child { margin-bottom: 0; }
+  .after { margin-top: 1rem; }
+  .btn { margin-top: 1.2rem; }
 
-  .rules { padding-left: 1.15rem; color: var(--ink-soft); }
+  .rules { padding-left: 1.15rem; margin: 0.9rem 0 0; color: var(--ink-soft); }
   .rules li { margin-bottom: 0.42rem; }
+  .rules li:last-child { margin-bottom: 0; }
   .rules strong { color: var(--ink); }
+  .rules em { font-style: italic; }
 
-  pre {
-    margin: 0.9rem 0 0;
+  .gates {
+    margin: 1.6rem 0 0;
+    font-size: 0.82rem;
+    font-family: var(--mark);
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  /*
+   * The security note is the argument for submitting at all, so it is a panel
+   * and not a bullet. Opaque parchment rather than a wash: over the sheet's own
+   * gradient a translucent ground would land somewhere unknowable, and this
+   * block has to hold 4.5:1 at its darkest corner. On #dcc79c, --ink-soft is
+   * 5.6:1 and the rubric rule needs no contrast at all.
+   */
+  .grant {
+    margin-top: 1.3rem;
+    padding: 1.1rem 1.25rem 1.2rem;
+    background: linear-gradient(158deg, var(--vellum-warm), var(--vellum-deep));
+    border-left: 3px solid var(--rubric, #8a2f1d);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.45) inset,
+      0 -10px 18px -14px rgba(120, 84, 36, 0.6) inset;
+  }
+  .grant > *:last-child { margin-bottom: 0; }
+  .grant__mark {
+    margin: 0 0 0.7rem;
+    font-family: var(--mark);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+    color: var(--rubric, #8a2f1d);
+  }
+  .grant p { font-size: 0.96rem; }
+
+  /* --- the samples, given the standing of the thing they are ------------- */
+
+  .snippet {
+    margin: 1rem 0 0;
+    border-left: 3px solid var(--brass);
+    box-shadow: 0 14px 26px -20px rgba(0, 0, 0, 0.9);
+  }
+  .snippet--tight { margin-top: 0.7rem; }
+  .snippet figcaption {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 0.7rem 0.45rem 0.85rem;
+    background: linear-gradient(180deg, var(--oak-lit), #2b1d11);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+    box-shadow: 0 1px 0 rgba(240, 205, 133, 0.22) inset;
+  }
+  .snippet__name {
+    font-family: var(--mark);
+    font-size: 0.68rem;
+    letter-spacing: 0.11em;
+    color: var(--brass-lit);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .snippet__copy {
+    flex: none;
+    font-family: var(--mark);
+    font-size: 0.62rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--brass-lit);
+    background: rgba(192, 138, 52, 0.12);
+    border: 1px solid rgba(192, 138, 52, 0.5);
+    border-radius: 2px;
+    padding: 0.32rem 0.6rem;
+    cursor: pointer;
+    transition: background 180ms, color 180ms, border-color 180ms;
+  }
+  .snippet__copy:hover { background: rgba(192, 138, 52, 0.24); color: var(--brass-hi); }
+  .snippet__copy[data-done] {
+    background: rgba(61, 127, 108, 0.3);
+    border-color: rgba(90, 165, 145, 0.7);
+    color: #bfe6d8;
+  }
+
+  .snippet pre {
+    margin: 0;
     padding: 1rem 1.1rem;
     overflow-x: auto;
     background: rgba(30, 21, 13, 0.94);
-    border-left: 3px solid var(--brass);
     box-shadow: 0 2px 12px rgba(60, 40, 16, 0.4) inset;
   }
-  pre code {
+  .snippet pre code {
     font-family: var(--mark);
-    font-size: 0.78rem;
+    /* 0.78rem was 12.5px for the one block on the site people read character by
+       character while retyping it. */
+    font-size: 0.82rem;
     line-height: 1.7;
     color: rgba(244, 232, 207, 0.9);
     background: none;
     padding: 0;
     white-space: pre;
   }
+  /*
+   * `set:html` output carries no scoping attribute, so these have to be global.
+   * Both colours are measured on the block's own ground (#2b2219 composited):
+   * brass-lit 10.3:1, the comment ochre 5.9:1. Brass-lit is only ever safe here
+   * — on parchment it is a smudge.
+   */
+  .snippet pre code :global(.y-key) { color: var(--brass-lit); font-weight: 500; }
+  .snippet pre code :global(.y-dim) { color: #b79a6a; }
+
   code {
     font-family: var(--mark);
     font-size: 0.86em;
@@ -183,15 +482,19 @@ Markdown. Tell people what they are looking at.`;
     color: #6b3a12;
     padding: 0.1em 0.36em;
   }
-  .note {
-    margin-top: 0.95rem;
-    font-size: 0.91rem;
-    color: var(--ink-faint);
-    border-left: 2px solid rgba(138, 47, 29, 0.5);
-    padding-left: 0.95rem;
-    font-style: italic;
+
+  /* --ink-faint is 4.4:1 and this line is 15px, so it took --ink-soft. */
+  .also {
+    margin-top: 1rem;
+    font-size: 0.93rem;
+    color: var(--ink-soft);
   }
+
   @media (max-width: 620px) {
-    .step { grid-template-columns: 1fr; gap: 0.5rem; }
+    /* minmax(0, …), not 1fr: a `1fr` track cannot shrink below its content, and
+       the samples are wider than a phone by design — they scroll inside the
+       block instead of pushing the sheet off the wall. */
+    .step { grid-template-columns: minmax(0, 1fr); gap: 0.7rem; }
+    .step::before { width: 3rem; min-height: 3rem; }
   }
 </style>
