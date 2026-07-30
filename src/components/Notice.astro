@@ -6,8 +6,16 @@ import { CHARGES, blazon } from '../lib/crest';
 
 interface Props {
   project: any;
+  /**
+   * A hall with one commission is a real state, not a broken one. As a
+   * broadside the single notice is posted at the width of a proclamation —
+   * plate beside text, more of the record on show — rather than left as one
+   * card-sized thing in a grid cut for four.
+   */
+  broadside?: boolean;
 }
-const { project } = Astro.props;
+
+const { project, broadside = false } = Astro.props;
 const d = project.data;
 
 const authors = await Promise.all(
@@ -19,13 +27,38 @@ const lead = d.by[0].id;
 // device that appears on their arms, so a notice is signed at a glance.
 const stamp = CHARGES[blazon(lead).charge];
 
+/*
+ * A proclamation is hung straighter than a card tossed on a board — and the
+ * same degree of tilt drifts three times as far across three times the width.
+ *
+ * The angle is set on the element rather than in the style block because a
+ * solo broadside is child 1 of the board and so also answers to the hall's
+ * `.notice:nth-child(3n+1)` at (0,2,0) — and this component's scoped
+ * `.notice--broadside` compiles to `.notice--broadside[data-astro-cid-…]`,
+ * which only ties it. A tie is settled by emission order, which would leave
+ * the proclamation's hang to the bundler rather than to this file.
+ */
+const hang = broadside ? '--tilt: -0.35deg' : undefined;
+
 const posted = d.posted.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+// Named in the docket as well as coloured in the wax: the seal's tincture is
+// the badge, but nothing on the board told you how to read it.
+const kind = d.kind === 'game' ? 'Game' : 'App';
 ---
 
-<a class="notice" href={`/projects/${project.id}`}>
+<a
+  class:list={['notice', { 'notice--broadside': broadside }]}
+  href={`/projects/${project.id}`}
+  style={hang}
+  data-kind={d.kind}
+  data-tags={d.tags.join('|')}
+>
   <span class="pin" aria-hidden="true"></span>
+  <!-- A sheet this wide is pinned at both corners; one pin in the middle would
+       sag it. -->
+  {broadside && <span class="pin pin--far" aria-hidden="true"></span>}
 
-  <span class={`wax ${d.kind === 'app' ? 'wax--app' : ''}`} aria-hidden="true">
+  <span class:list={['wax', { 'wax--app': d.kind === 'app' }]} aria-hidden="true">
     <span class="wax__blob"></span>
     <span class="wax__stamp">
       <svg viewBox="0 0 100 116">
@@ -35,27 +68,170 @@ const posted = d.posted.toLocaleDateString('en-GB', { month: 'short', year: 'num
       </svg>
     </span>
   </span>
-  <span class="visually-hidden">{d.kind}</span>
 
   <div class="sheet">
     {d.cover ? (
       <div class="notice__plate">
-        <Image src={d.cover} alt="" width={640} height={400} loading="lazy" />
+        <Image src={d.cover} alt="" width={broadside ? 760 : 640} height={broadside ? 520 : 400} loading="lazy" />
       </div>
     ) : (
       <div class="notice__plate notice__plate--arms">
-        <Crest handle={lead} size={84} title={false} />
+        <Crest handle={lead} size={broadside ? 128 : 84} title={false} />
       </div>
     )}
 
     <div class="notice__body">
+      <p class="notice__docket">{kind} · {posted}</p>
       <h3 class="notice__title">{d.title}</h3>
       <p class="notice__tagline">{d.tagline}</p>
-      <div class="notice__foot">
-        <span>{authors.join(' & ')}</span>
-        <span aria-hidden="true">·</span>
-        <span>{posted}</span>
-      </div>
+      {broadside && d.tags.length > 0 && (
+        <p class="notice__tags">{d.tags.join(' · ')}</p>
+      )}
+      <p class="notice__foot">
+        <span>By {authors.join(' & ')}</span>
+        {broadside && <span class="notice__go" aria-hidden="true">Open the commission →</span>}
+      </p>
     </div>
   </div>
 </a>
+
+<style>
+  /*
+   * The broadside's own width decides whether the plate sits beside the text or
+   * above it — not the viewport's. The same notice is posted at full hall width
+   * on a tablet and at two thirds of it on a desktop board, so a media query
+   * would answer the wrong question in one of those two places.
+   */
+  .notice { container-type: inline-size; }
+
+  /* The board filters by hiding cards, and the hall gives .notice an author
+     `display: flex`, which outranks the UA rule that [hidden] relies on. */
+  .notice[hidden] { display: none; }
+
+  /*
+   * Cards in a row are stretched to the tallest of them; without this the sheet
+   * stopped at its own text and the row became a set of parchments of four
+   * different lengths with their signature lines at four different heights,
+   * which is the surest sign of a grid nobody composed.
+   */
+  .notice .sheet {
+    /* Grow, but keep `auto` as the basis: the sheet's own content is still what
+       the grid row measures, so a taller neighbour can only ever add height. */
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* The seal is poured over the sheet's top edge, half on the timber. Wax is
+     applied to an edge or a fold; 12px inside the corner of the artwork it read
+     as a sticker, and it covered the picture it was sitting on. */
+  .notice .wax {
+    top: -13px;
+    right: 15px;
+  }
+
+  .notice .notice__plate {
+    position: relative;
+    isolation: isolate;
+    flex: none;
+    /* A plate is tipped into the sheet rather than laid on top of it: the
+       paper's shade falls in over its top edge, and the paper catches the light
+       again just below where it ends. */
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.4),
+      0 3px 7px -2px rgba(60, 40, 16, 0.34) inset;
+  }
+  .notice .notice__plate::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    /* Cover art arrives at any exposure and any white balance. Multiplying a
+       warm vignette over it drags every submission into the hall's light
+       instead of leaving one bright screenshot glaring off the parchment. */
+    background: radial-gradient(118% 112% at 50% 32%, transparent 52%, rgba(46, 28, 10, 0.4));
+    mix-blend-mode: multiply;
+  }
+
+  /*
+   * Hierarchy: the docket classifies the notice, the title and line make the
+   * claim, the foot signs it. Kind and date used to be split between an
+   * invisible span and the foot, which left the foot carrying two unrelated
+   * facts joined by a dot and the card with no opening line at all.
+   */
+  .notice__docket {
+    margin: 0;
+    font-family: var(--mark);
+    font-size: 0.63rem;
+    letter-spacing: 0.17em;
+    text-transform: uppercase;
+    /* --ink-faint is 4.4:1 on parchment and this is 10px: metadata has to clear
+       AA on its own ground, so the whole card's small type sits on --ink-soft. */
+    color: var(--ink-soft);
+  }
+  .notice .notice__foot {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+  /* The cue inherits the foot's mono, and takes the ink every other link on
+     parchment is set in — at this size the title alone does not read as
+     clickable. */
+  .notice__go { color: var(--ink-link, #7a3a12); }
+
+  /* The tag list is the same register as the docket: what the thing is made of,
+     rather than what it claims. */
+  .notice__tags {
+    margin: 0.15rem 0 0;
+    font-family: var(--mark);
+    font-size: 0.63rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+
+  /* --- the single commission, posted as a broadside ---------------------- */
+
+  /*
+   * Both corners are pinned at one inset, and never nearer the edge than the
+   * seal: the wax is 52px wide starting 15px in, so a flat 9% drives the far
+   * pin through it on any sheet under ~840px — which is every width this
+   * broadside is actually posted at.
+   */
+  .notice--broadside { --pin-inset: max(9%, 88px); }
+  .notice--broadside .pin { left: var(--pin-inset); }
+  .notice--broadside .pin--far { left: auto; right: var(--pin-inset); transform: translateX(50%); }
+  .notice--broadside .notice__title {
+    font-size: var(--f-h3);
+    letter-spacing: 0.025em;
+    line-height: 1.16;
+  }
+  .notice--broadside .notice__tagline {
+    font-size: var(--f-body);
+    line-height: 1.62;
+    max-width: 42ch;
+  }
+  .notice--broadside .notice__body {
+    gap: 0.6rem;
+    padding: clamp(1.3rem, 2.6vw, 2rem);
+  }
+  .notice--broadside .notice__foot {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.35rem 1.2rem;
+    padding-top: 1rem;
+  }
+
+  @container (min-width: 560px) {
+    .notice--broadside .sheet {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.12fr);
+    }
+    /* Beside the text the plate is a column, so its height comes from the
+       record next to it rather than from a fixed crop. */
+    .notice--broadside .notice__plate {
+      aspect-ratio: auto;
+      border-bottom: 0;
+      border-right: 1px solid rgba(122, 88, 44, 0.28);
+    }
+  }
+</style>

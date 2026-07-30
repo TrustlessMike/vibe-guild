@@ -8,86 +8,195 @@ const projects = (await getCollection('projects')).sort(
 );
 
 const tags = [...new Set(projects.flatMap((p) => p.data.tags))].sort();
-const counts = {
-  all: projects.length,
-  game: projects.filter((p) => p.data.kind === 'game').length,
-  app: projects.filter((p) => p.data.kind === 'app').length,
-};
+
+/*
+ * A kind with nothing on the board is not a filter, it is a dead click: "Apps ·
+ * 0" was offered as a control whose only possible outcome was an empty board.
+ */
+const kinds = [
+  { key: 'all', label: 'All' },
+  { key: 'game', label: 'Games' },
+  { key: 'app', label: 'Apps' },
+]
+  .map((k) => ({
+    ...k,
+    n: k.key === 'all' ? projects.length : projects.filter((p) => p.data.kind === k.key).length,
+  }))
+  .filter((k) => k.n > 0);
+
+/*
+ * Filters earn their row only once the board outgrows a glance. Below that the
+ * whole board is already on screen, so the chips are furniture — and at one
+ * commission every chip in the row resolves to the same single card.
+ */
+const showFilters = projects.length > 3 && (kinds.length > 2 || tags.length > 1);
+
+/*
+ * The vacancy is pinned up as the board's last card, so it counts toward the
+ * row: a small board is given a column count that divides its cards instead of
+ * ending on one lonely notice with three empty tracks beside it. Past six cards
+ * the board is a wall rather than a composition and density wins, which is the
+ * auto-fill behaviour it has always had.
+ */
+const columns = (cells: number) => (cells < 5 ? cells : cells < 7 ? 3 : 4);
+const cols = columns(projects.length + 1);
+
+// One commission is posted as a broadside with the vacancy as a slip beside it:
+// a composition, rather than a card and a hole.
+const solo = projects.length === 1;
+
+const eyebrow =
+  projects.length === 0
+    ? 'The board is bare'
+    : solo
+      ? 'One commission, and room for yours'
+      : `${projects.length} commissions · newest first`;
 ---
 
 <Hall title="The Board">
   <section class="top rise">
-    <p class="mark">Every commission, newest first</p>
+    <p class="mark">{eyebrow}</p>
     <h1>The Board</h1>
     <p class="lede">
       Everything here runs in your browser. Nothing to install, nothing to sign
       up for.
     </p>
 
-    <div class="filters" data-filters>
-      <div class="filters__row" role="group" aria-label="Filter by kind">
-        <button class="chip" data-kind="all" aria-pressed="true">All · {counts.all}</button>
-        <button class="chip" data-kind="game" aria-pressed="false">Games · {counts.game}</button>
-        <button class="chip" data-kind="app" aria-pressed="false">Apps · {counts.app}</button>
-      </div>
-      {tags.length > 0 && (
-        <div class="filters__row" role="group" aria-label="Filter by tag">
-          {tags.map((t) => (
-            <button class="chip" data-tag={t} aria-pressed="false">{t}</button>
+    {showFilters && (
+      <div class="filters" data-filters>
+        <div class="filters__row" role="group" aria-label="Filter by kind">
+          {kinds.map((k) => (
+            <button class="chip" type="button" data-kind={k.key} aria-pressed={String(k.key === 'all')}>
+              {k.label} · <span class="chip__n" data-n>{k.n}</span>
+            </button>
           ))}
         </div>
-      )}
-    </div>
+        {tags.length > 1 && (
+          <div class="filters__row" role="group" aria-label="Filter by tag">
+            {tags.map((t) => (
+              <button class="chip" type="button" data-tag={t} aria-pressed="false">{t}</button>
+            ))}
+          </div>
+        )}
+      </div>
+    )}
   </section>
 
-  <div class="board" data-board>
-    {projects.map((p) => (
-      <div data-kind={p.data.kind} data-tags={p.data.tags.join('|')} class="slot">
-        <Notice project={p} />
-      </div>
-    ))}
+  <div
+    class:list={['board', solo ? 'board--solo' : 'board--rows']}
+    style={solo ? undefined : `--cols:${cols}`}
+    data-board
+  >
+    {projects.map((p) => <Notice project={p} broadside={solo} />)}
+
+    <!-- An empty slot rather than another notice: bare timber, a hairline where
+         a sheet would go and a spare pin already stuck in the board. It has to
+         read as room on the wall, not as a commission. -->
+    <a class="vacancy" href="/submit">
+      <span class="pin" aria-hidden="true"></span>
+      <span class="vacancy__mark">The board has room</span>
+      <span class="vacancy__act">Post a commission</span>
+      <span class="vacancy__note">
+        Two markdown files and a pull request. The Guild takes no cut and no
+        rights.
+      </span>
+    </a>
   </div>
 
-  <p class="empty" data-empty hidden>Nothing on the board matches that.</p>
+  {showFilters && (
+    <div class="void sheet" data-empty hidden role="status">
+      <span class="pin" aria-hidden="true"></span>
+      <p class="void__line">No commission on the board answers to that.</p>
+      <button class="btn" type="button" data-clear>Show every commission</button>
+    </div>
+  )}
 </Hall>
 
 <script>
-  const board = document.querySelector('[data-board]');
-  const empty = document.querySelector('[data-empty]');
-  const kindBtns = [...document.querySelectorAll('[data-kind]')];
-  const tagBtns = [...document.querySelectorAll('[data-tag]')];
+  const board = document.querySelector<HTMLElement>('[data-board]');
+  const empty = document.querySelector<HTMLElement>('[data-empty]');
+  const notices = [...(board?.querySelectorAll<HTMLElement>('.notice') ?? [])];
+  // Scoped to the filter row: a notice carries data-kind of its own now, and an
+  // unscoped selector would have collected the cards as controls.
+  const kindBtns = [...document.querySelectorAll<HTMLButtonElement>('[data-filters] [data-kind]')];
+  const tagBtns = [...document.querySelectorAll<HTMLButtonElement>('[data-filters] [data-tag]')];
+
+  // Restates the frontmatter's column count, which the build can only take from
+  // every card it ships. A filter changes how many are actually up, so the row
+  // has to be recomposed around what is left of it — otherwise filtering leaves
+  // exactly the empty tracks the count exists to prevent.
+  const columns = (cells: number) => (cells < 5 ? cells : cells < 7 ? 3 : 4);
 
   let kind = 'all';
-  let tag: string | null = new URLSearchParams(location.search).get('tag');
+  let tag = new URLSearchParams(location.search).get('tag');
+  // A shared link can name a tag that is no longer on the board; honouring it
+  // would open the hall on an empty one.
+  if (tag && !tagBtns.some((b) => b.dataset.tag === tag)) tag = null;
+
+  const matches = (el: HTMLElement, k: string, t: string | null) =>
+    (k === 'all' || el.dataset.kind === k) &&
+    (!t || (el.dataset.tags || '').split('|').includes(t));
+
+  const tally = (k: string, t: string | null) =>
+    notices.filter((el) => matches(el, k, t)).length;
 
   function paint() {
     let shown = 0;
-    for (const slot of board?.querySelectorAll('.slot') ?? []) {
-      const el = slot as HTMLElement;
-      const okKind = kind === 'all' || el.dataset.kind === kind;
-      const okTag = !tag || (el.dataset.tags || '').split('|').includes(tag);
-      const show = okKind && okTag;
+    for (const el of notices) {
+      const show = matches(el, kind, tag);
       el.hidden = !show;
       if (show) shown++;
     }
-    if (empty) (empty as HTMLElement).hidden = shown > 0;
-    for (const b of kindBtns) b.setAttribute('aria-pressed', String(b.getAttribute('data-kind') === kind));
-    for (const b of tagBtns) b.setAttribute('aria-pressed', String(b.getAttribute('data-tag') === tag));
+    if (empty) empty.hidden = shown > 0;
+    // The vacancy is always up, so it counts toward the row here as well.
+    if (board?.classList.contains('board--rows')) {
+      board.style.setProperty('--cols', String(columns(shown + 1)));
+    }
+
+    for (const b of kindBtns) {
+      const k = b.dataset.kind!;
+      const n = tally(k, tag);
+      const nEl = b.querySelector('[data-n]');
+      // The counts are cross-filtered, so a chip never advertises a number the
+      // board will not actually show once it is pressed.
+      if (nEl) nEl.textContent = String(n);
+      b.setAttribute('aria-pressed', String(k === kind));
+      // Never disable the pressed control: it is the way back out.
+      b.disabled = n === 0 && k !== kind;
+    }
+    for (const b of tagBtns) {
+      const t = b.dataset.tag!;
+      b.setAttribute('aria-pressed', String(t === tag));
+      b.disabled = t !== tag && tally(kind, t) === 0;
+    }
+  }
+
+  function writeTag() {
+    const url = new URL(location.href);
+    if (tag) url.searchParams.set('tag', tag);
+    else url.searchParams.delete('tag');
+    history.replaceState({}, '', url);
   }
 
   for (const b of kindBtns) {
-    b.addEventListener('click', () => { kind = b.getAttribute('data-kind')!; paint(); });
+    b.addEventListener('click', () => { kind = b.dataset.kind!; paint(); });
   }
   for (const b of tagBtns) {
     b.addEventListener('click', () => {
-      const t = b.getAttribute('data-tag')!;
+      const t = b.dataset.tag!;
       tag = tag === t ? null : t;                 // clicking an active tag clears it
-      const url = new URL(location.href);
-      tag ? url.searchParams.set('tag', tag) : url.searchParams.delete('tag');
-      history.replaceState({}, '', url);
+      writeTag();
       paint();
     });
   }
+  document.querySelector('[data-clear]')?.addEventListener('click', () => {
+    kind = 'all';
+    tag = null;
+    writeTag();
+    paint();
+    // This button is about to be hidden, so focus must not go with it.
+    kindBtns[0]?.focus();
+  });
   paint();
 </script>
 
@@ -97,6 +206,101 @@ const counts = {
   .filters { display: grid; gap: 0.6rem; margin-top: 1.8rem; }
   .filters__row { display: flex; flex-wrap: wrap; gap: 0.45rem; }
   .filters__row .chip { cursor: pointer; font-family: var(--mark); }
-  .slot[hidden] { display: none; }
-  .empty { color: rgba(242, 229, 203, 0.6); padding: 2rem 0; }
+  /* A chip that cannot change anything says so instead of waiting to
+     disappoint; the count beside it is the explanation. Held deliberately below
+     the contrast the rest of the hall keeps — an inactive control carries no
+     contrast requirement, and has to look inactive. */
+  .filters__row .chip:disabled {
+    opacity: 0.5;
+    cursor: default;
+    color: rgba(244, 232, 207, 0.76);
+    background: rgba(192, 138, 52, 0.05);
+    border-color: rgba(192, 138, 52, 0.18);
+  }
+  .chip__n { font-variant-numeric: tabular-nums; }
+
+  /*
+   * The board's columns follow the number of cards on it, not the width of the
+   * hall. Tracks are as wide as an even division of the row and never narrower
+   * than the 276px the wall has always used, so a phone still collapses to one
+   * column without a breakpoint of its own.
+   */
+  .board.board--rows {
+    /* The track has to know the gap, so the gap becomes a value rather than a
+       literal — deferring to the shared token if the house stylesheet has one. */
+    --gap: var(--board-gap, clamp(1.6rem, 2.6vw, 2.6rem));
+    gap: var(--gap);
+    /* The half pixel is deliberate: on an exact division the last track can
+       round itself onto the next row. */
+    grid-template-columns: repeat(
+      auto-fill,
+      minmax(max(276px, (100% - (var(--cols) - 1) * var(--gap)) / var(--cols) - 0.5px), 1fr)
+    );
+  }
+
+  /* One commission: the broadside takes the wall and the vacancy is the slip
+     beside it, so the row ends where the hall ends. */
+  .board.board--solo { grid-template-columns: minmax(0, 1fr); }
+  @media (min-width: 900px) {
+    .board.board--solo { grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.55fr); }
+  }
+
+  .vacancy {
+    /* The shared `settle` animation rotates by --tilt, and an undefined one
+       invalidates the whole transform — including the rise. */
+    --tilt: 0deg;
+    position: relative;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 0.55rem;
+    min-height: 13rem;
+    padding: 2.2rem 1.5rem;
+    text-align: center;
+    text-decoration: none;
+    border: 1px dashed rgba(192, 138, 52, 0.34);
+    border-radius: 2px;
+    background: radial-gradient(82% 62% at 50% 0%, rgba(255, 198, 112, 0.07), transparent 70%);
+    box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4) inset;
+    transition: border-color 220ms, background 220ms;
+  }
+  .vacancy:hover, .vacancy:focus-visible {
+    border-color: rgba(240, 205, 133, 0.62);
+    background: radial-gradient(82% 62% at 50% 0%, rgba(255, 198, 112, 0.14), transparent 72%);
+  }
+  .vacancy__mark {
+    font-family: var(--mark);
+    font-size: 0.66rem;
+    letter-spacing: 0.19em;
+    text-transform: uppercase;
+    color: var(--brass);
+  }
+  .vacancy__act {
+    font-family: var(--carve);
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: 0.05em;
+    color: var(--brass-lit);
+  }
+  .vacancy__note {
+    max-width: 27ch;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    color: rgba(244, 232, 207, 0.66);
+  }
+
+  /* Nothing matched: a slip pinned up in the board's place, since anything you
+     read in this hall is on parchment — and it carries the way out with it. */
+  .void {
+    max-width: 46ch;
+    margin: clamp(1.5rem, 4vw, 2.6rem) auto 0;
+    padding: 1.9rem 2rem 2rem;
+    text-align: center;
+    transform: rotate(-0.55deg);
+  }
+  .void__line {
+    max-width: none;
+    margin: 0 0 1.3rem;
+    color: var(--ink-soft);
+  }
 </style>
