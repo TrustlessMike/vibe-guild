@@ -128,9 +128,12 @@ const paint = (src: string) =>
         <figure class="snippet">
           <figcaption>
             <span class="snippet__name">src/content/creators/yourhandle.md</span>
-            <button class="snippet__copy" type="button" aria-live="polite" hidden>Copy</button>
+            <button class="snippet__copy" type="button" aria-live="polite" hidden>
+              <span class="snippet__word">Copy</span>
+              <span class="visually-hidden"> the creator file</span>
+            </button>
           </figcaption>
-          <pre><code set:html={paint(creatorFile)}></code></pre>
+          <pre tabindex="0" role="region" aria-label="Code sample, scrollable"><code set:html={paint(creatorFile)}></code></pre>
         </figure>
         <p class="after">
           Rather draw your own? A <code>crest:</code> block with any of
@@ -192,18 +195,24 @@ const paint = (src: string) =>
         <figure class="snippet">
           <figcaption>
             <span class="snippet__name">src/content/projects/your-thing.md</span>
-            <button class="snippet__copy" type="button" aria-live="polite" hidden>Copy</button>
+            <button class="snippet__copy" type="button" aria-live="polite" hidden>
+              <span class="snippet__word">Copy</span>
+              <span class="visually-hidden"> the project file</span>
+            </button>
           </figcaption>
-          <pre><code set:html={paint(projectFile)}></code></pre>
+          <pre tabindex="0" role="region" aria-label="Code sample, scrollable"><code set:html={paint(projectFile)}></code></pre>
         </figure>
 
         <p class="after">Hosted somewhere already? Swap the <code>bundle</code> line for a URL:</p>
         <figure class="snippet snippet--tight">
           <figcaption>
             <span class="snippet__name">…in place of play.bundle</span>
-            <button class="snippet__copy" type="button" aria-live="polite" hidden>Copy</button>
+            <button class="snippet__copy" type="button" aria-live="polite" hidden>
+              <span class="snippet__word">Copy</span>
+              <span class="visually-hidden"> the hosted-elsewhere play block</span>
+            </button>
           </figcaption>
-          <pre><code set:html={paint(hostedElsewhere)}></code></pre>
+          <pre tabindex="0" role="region" aria-label="Code sample, scrollable"><code set:html={paint(hostedElsewhere)}></code></pre>
         </figure>
 
         <h3 class="gates">What the schema insists on</h3>
@@ -264,24 +273,40 @@ const paint = (src: string) =>
    * clipboard access is never offered a control that cannot do anything. The
    * copied text is read back out of the rendered sample rather than held in a
    * second copy of it, which is the only way the two can never drift apart.
+   *
+   * Only `.snippet__word` is ever rewritten: the rest of the button is the
+   * visually hidden phrase that tells a screen reader which of the three
+   * samples this one copies, and replacing the button's whole text would erase
+   * it on the first press.
    */
   if (navigator.clipboard) {
     document.querySelectorAll('.snippet__copy').forEach((el) => {
       if (!(el instanceof HTMLButtonElement)) return;
+      const word = el.querySelector('.snippet__word');
+      if (!word) return;
       el.hidden = false;
+
+      let revert = 0;
+      const say = (text: string, done: boolean) => {
+        word.textContent = text;
+        el.toggleAttribute('data-done', done);
+        window.clearTimeout(revert);
+        revert = window.setTimeout(() => {
+          word.textContent = 'Copy';
+          el.removeAttribute('data-done');
+        }, 1800);
+      };
+
       el.addEventListener('click', async () => {
         const code = el.closest('.snippet')?.querySelector('code');
         if (!code) return;
         try {
           await navigator.clipboard.writeText(code.textContent ?? '');
-          el.setAttribute('data-done', '');
-          el.textContent = 'Copied';
-          window.setTimeout(() => {
-            el.removeAttribute('data-done');
-            el.textContent = 'Copy';
-          }, 1800);
+          say('Copied', true);
         } catch {
-          el.textContent = 'Select and copy';
+          // A denied clipboard permission is the usual cause, and it is not
+          // worth stranding the label on a message the button cannot act on.
+          say('Copy failed', false);
         }
       });
     });
@@ -428,7 +453,11 @@ const paint = (src: string) =>
     white-space: nowrap;
   }
   .snippet__copy {
+    /* The label swaps to "Copied"/"Copy failed" in place; on a phone the button
+       must grow sideways into the ellipsised filename rather than onto a
+       second line, which would deepen the caption bar mid-press. */
     flex: none;
+    white-space: nowrap;
     font-family: var(--mark);
     font-size: 0.62rem;
     letter-spacing: 0.15em;

@@ -27,6 +27,19 @@ const lead = d.by[0].id;
 // device that appears on their arms, so a notice is signed at a glance.
 const stamp = CHARGES[blazon(lead).charge];
 
+/*
+ * A proclamation is hung straighter than a card tossed on a board — and the
+ * same degree of tilt drifts three times as far across three times the width.
+ *
+ * The angle is set on the element rather than in the style block because a
+ * solo broadside is child 1 of the board and so also answers to the hall's
+ * `.notice:nth-child(3n+1)` at (0,2,0) — and this component's scoped
+ * `.notice--broadside` compiles to `.notice--broadside[data-astro-cid-…]`,
+ * which only ties it. A tie is settled by emission order, which would leave
+ * the proclamation's hang to the bundler rather than to this file.
+ */
+const hang = broadside ? '--tilt: -0.35deg' : undefined;
+
 const posted = d.posted.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
 // Named in the docket as well as coloured in the wax: the seal's tincture is
 // the badge, but nothing on the board told you how to read it.
@@ -36,6 +49,7 @@ const kind = d.kind === 'game' ? 'Game' : 'App';
 <a
   class:list={['notice', { 'notice--broadside': broadside }]}
   href={`/projects/${project.id}`}
+  style={hang}
   data-kind={d.kind}
   data-tags={d.tags.join('|')}
 >
@@ -90,7 +104,8 @@ const kind = d.kind === 'game' ? 'Game' : 'App';
    */
   .notice { container-type: inline-size; }
 
-  /* The board filters by hiding cards, and a flex container ignores [hidden]. */
+  /* The board filters by hiding cards, and the hall gives .notice an author
+     `display: flex`, which outranks the UA rule that [hidden] relies on. */
   .notice[hidden] { display: none; }
 
   /*
@@ -176,12 +191,15 @@ const kind = d.kind === 'game' ? 'Game' : 'App';
 
   /* --- the single commission, posted as a broadside ---------------------- */
 
-  /* A proclamation is hung straighter than a card tossed on a board — and the
-     same degree of tilt drifts three times as far across three times the
-     width. */
-  .notice--broadside { --tilt: -0.35deg; }
-  .notice--broadside .pin { left: 9%; }
-  .notice--broadside .pin--far { left: auto; right: 9%; transform: translateX(50%); }
+  /*
+   * Both corners are pinned at one inset, and never nearer the edge than the
+   * seal: the wax is 52px wide starting 15px in, so a flat 9% drives the far
+   * pin through it on any sheet under ~840px — which is every width this
+   * broadside is actually posted at.
+   */
+  .notice--broadside { --pin-inset: max(9%, 88px); }
+  .notice--broadside .pin { left: var(--pin-inset); }
+  .notice--broadside .pin--far { left: auto; right: var(--pin-inset); transform: translateX(50%); }
   .notice--broadside .notice__title {
     font-size: var(--f-h3);
     letter-spacing: 0.025em;

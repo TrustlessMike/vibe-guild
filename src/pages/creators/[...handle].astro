@@ -100,7 +100,11 @@ const toGo = !next
         )}
       </div>
 
-      <footer class="standing">
+      <!--
+        A div, not a footer: `header` may not have a `footer` descendant, and
+        this block has to stay a grid item of the charter to span its columns.
+      -->
+      <div class="standing">
         <div class="standing__rank">
           <p class="standing__name carve">{rank}</p>
           <ol class="standing__rungs" aria-hidden="true">
@@ -109,7 +113,7 @@ const toGo = !next
         </div>
         <p class="standing__earned">{tally} — {toGo}.</p>
         <p class="mark standing__where">Joined {joined}{d.location ? ` · ${d.location}` : ''}</p>
-      </footer>
+      </div>
     </header>
 
     {hasScroll && <div class="sheet leaf illuminate member__scroll"><Content /></div>}
@@ -142,11 +146,25 @@ const toGo = !next
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     gap: clamp(1.2rem, 4vw, 2.6rem);
-    align-items: center;
     padding: clamp(1.6rem, 4vw, 2.6rem);
     transform: rotate(-0.4deg);
   }
-  .charter__text > * + * { margin-top: 0.6rem; }
+  /*
+   * Both columns hang from the top of the sheet and close on their own row of
+   * small links.
+   *
+   * A bio is optional — the schema says so and the hall's founding member has
+   * none — and without one the text column is barely half the height of the
+   * shield and blazon beside it. Centred, that floated the member's name in the
+   * middle of the sheet with dead parchment above and below it, and the name is
+   * the first thing this page has to say. Stretched, the two columns start on
+   * the same edge and finish on the same one.
+   */
+  .charter__text { display: flex; flex-direction: column; gap: 0.6rem; }
+  /* Spacing is the column's business now, and a paragraph's own trailing margin
+     would compound with the gap rather than collapse into it. */
+  .charter__text p { margin-bottom: 0; }
+  .charter__text .links { margin-top: auto; padding-top: 0.5rem; }
   /* A name is submitted content and can be one unbroken word longer than the
      column; it has to break rather than run off the edge of the parchment. */
   .charter h1 { overflow-wrap: break-word; }

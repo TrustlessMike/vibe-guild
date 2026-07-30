@@ -38,9 +38,8 @@ const showFilters = projects.length > 3 && (kinds.length > 2 || tags.length > 1)
  * the board is a wall rather than a composition and density wins, which is the
  * auto-fill behaviour it has always had.
  */
-const cells = projects.length + 1;
-const COLS: Record<number, number> = { 1: 1, 2: 2, 3: 3, 4: 4, 5: 3, 6: 3 };
-const cols = COLS[cells] ?? 4;
+const columns = (cells: number) => (cells < 5 ? cells : cells < 7 ? 3 : 4);
+const cols = columns(projects.length + 1);
 
 // One commission is posted as a broadside with the vacancy as a slip beside it:
 // a composition, rather than a card and a hole.
@@ -114,13 +113,19 @@ const eyebrow =
 </Hall>
 
 <script>
-  const board = document.querySelector('[data-board]');
+  const board = document.querySelector<HTMLElement>('[data-board]');
   const empty = document.querySelector<HTMLElement>('[data-empty]');
   const notices = [...(board?.querySelectorAll<HTMLElement>('.notice') ?? [])];
   // Scoped to the filter row: a notice carries data-kind of its own now, and an
   // unscoped selector would have collected the cards as controls.
   const kindBtns = [...document.querySelectorAll<HTMLButtonElement>('[data-filters] [data-kind]')];
   const tagBtns = [...document.querySelectorAll<HTMLButtonElement>('[data-filters] [data-tag]')];
+
+  // Restates the frontmatter's column count, which the build can only take from
+  // every card it ships. A filter changes how many are actually up, so the row
+  // has to be recomposed around what is left of it — otherwise filtering leaves
+  // exactly the empty tracks the count exists to prevent.
+  const columns = (cells: number) => (cells < 5 ? cells : cells < 7 ? 3 : 4);
 
   let kind = 'all';
   let tag = new URLSearchParams(location.search).get('tag');
@@ -143,6 +148,10 @@ const eyebrow =
       if (show) shown++;
     }
     if (empty) empty.hidden = shown > 0;
+    // The vacancy is always up, so it counts toward the row here as well.
+    if (board?.classList.contains('board--rows')) {
+      board.style.setProperty('--cols', String(columns(shown + 1)));
+    }
 
     for (const b of kindBtns) {
       const k = b.dataset.kind!;

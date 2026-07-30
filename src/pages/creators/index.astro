@@ -122,7 +122,12 @@ const roll = rungs
   .roll__list {
     list-style: none;
     padding: 0;
-    margin: clamp(1rem, 2.5vw, 1.6rem) 0 0;
+    /* Centred, because the rank inscription it hangs from is centred. A rank
+       held by one member is a single plate; ranged left under a centred
+       inscription it reads as an orphan rather than as the whole of that rank —
+       and today every rank on this page is held by one member. From four plates
+       up the maximum below exceeds the hall and this is inert. */
+    margin: clamp(1rem, 2.5vw, 1.6rem) auto 0;
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
     gap: 1rem;

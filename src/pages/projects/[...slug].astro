@@ -103,6 +103,12 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
       )}
 
       <div class="stage__well">
+        <!--
+          The `onload` mark is here rather than only in the script below because
+          the parser may yield between this element and that script, letting a
+          warm-cache `load` fire before any listener exists. Recorded on the
+          element itself, that arrival cannot be missed.
+        -->
         <iframe
           src={src}
           title={`${d.title} — playable`}
@@ -110,6 +116,7 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
           allow="autoplay; gamepad; fullscreen; xr-spatial-tracking"
           loading="lazy"
           referrerpolicy="no-referrer"
+          onload="this.dataset.arrived = ''"
         ></iframe>
 
         <!--
@@ -222,14 +229,24 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
         frame.addEventListener('load', () => { stop(); set('ready'); });
         frame.addEventListener('error', () => { stop(); set('failed'); });
 
-        set('loading');
-        if ('IntersectionObserver' in window) {
-          const io = new IntersectionObserver((entries) => {
-            if (entries.some((e) => e.isIntersecting)) { io.disconnect(); clock(); }
-          }, { rootMargin: '250px' });
-          io.observe(frame);
+        /*
+         * A frame that already arrived is never put behind the curtain: the
+         * `onload` mark on the element catches the load this script was too
+         * late to hear, which otherwise ends with a failure panel standing over
+         * a working game.
+         */
+        if ('arrived' in frame.dataset) {
+          set('ready');
         } else {
-          clock();
+          set('loading');
+          if ('IntersectionObserver' in window) {
+            const io = new IntersectionObserver((entries) => {
+              if (entries.some((e) => e.isIntersecting)) { io.disconnect(); clock(); }
+            }, { rootMargin: '250px' });
+            io.observe(frame);
+          } else {
+            clock();
+          }
         }
 
         const retry = stage.querySelector('[data-retry]');
@@ -238,22 +255,23 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
             set('loading');
             clock();
             /*
-             * Cleared first so the re-set is a real attribute change: a
-             * same-value assignment is not guaranteed to re-navigate. Parking on
-             * about:blank instead would fire a `load` of its own, which this
-             * would then read as the submission having arrived.
+             * Set, never cleared first. Removing the attribute is not a neutral
+             * reset: it navigates the frame to about:blank, and that navigation
+             * fires a `load` this would read as the submission having arrived,
+             * raising the curtain on an empty frame. Setting `src` is itself
+             * what re-runs the frame's navigation, same value or not.
              */
-            frame.removeAttribute('src');
             frame.setAttribute('src', src);
           });
         }
 
-        // Ships hidden: where a cross-origin frame cannot be put fullscreen —
-        // and with JS off — the control would be a button that does nothing.
+        // Ships hidden: where fullscreen is unsupported or disallowed by policy
+        // — and with JS off — the control would be a button that does nothing.
         const full = stage.querySelector('[data-fullscreen]');
-        if (full && frame.requestFullscreen) {
+        if (full && frame.requestFullscreen && document.fullscreenEnabled) {
           full.hidden = false;
-          full.addEventListener('click', () => frame.requestFullscreen());
+          // A refusal is the browser answering the user, not a fault to log.
+          full.addEventListener('click', () => frame.requestFullscreen().catch(() => {}));
         }
       })();
     </script>
@@ -403,7 +421,13 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
     font-size: 0.76rem;
     line-height: 1.6;
   }
-  .stage__note .mark { display: block; color: var(--brass); }
+  /*
+   * The placard hangs at the top of the case, where the candle wash lifts the
+   * timber to about rgb(95,68,37) — and against that, --brass measures 3.0:1 at
+   * 11px. The lit tone reads as the same metal catching the same light and
+   * lands at 5.9:1.
+   */
+  .stage__note .mark { display: block; color: var(--brass-lit); }
   @media (max-width: 760px), (pointer: coarse) {
     .stage__note { display: block; }
   }
@@ -416,6 +440,16 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
     z-index: 2;
     display: grid;
     place-content: center;
+    /*
+     * The well takes its height from the frame's aspect, so it does not grow
+     * with these words: on a phone the failure panel — cue, sentence and two
+     * buttons — stands taller than the picture, as does any state at a large
+     * type size. Overflow scrolls instead of being cropped by the picture's
+     * edge, and `safe` keeps the head of it reachable when that happens. The
+     * `place-content` above remains the fallback where the keyword is unknown.
+     */
+    align-content: safe center;
+    overflow-y: auto;
     justify-items: center;
     padding: clamp(1rem, 3vw, 2rem);
     text-align: center;
@@ -445,15 +479,16 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
    * near 7:1 and still reads as wax caught by candlelight, not as an error red.
    */
   .veil__cue--bad { color: #d38670; }
+  /* Every line here is a paragraph, and the global trailing 1em would open a
+     gap the grid is already spacing — inside a box that cannot grow to take it. */
+  .veil p { margin: 0; }
   .veil__say {
-    margin: 0;
     max-width: 46ch;
     font-size: 0.95rem;
     line-height: 1.55;
     color: rgba(244, 232, 207, 0.78);
   }
   .veil__slow {
-    margin: 0;
     max-width: 46ch;
     font-family: var(--mark);
     font-size: 0.74rem;
@@ -542,10 +577,11 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
        better as a row beneath it than as a squeezed column beside it. */
     .stage__bar { flex-direction: column; align-items: stretch; }
     /*
-     * A 16:9 well is only about 210px tall on a phone, and the well clips. The
-     * arms go, the copy tightens and the failure controls shrink so that even
-     * the tallest state — the one with two buttons in it — still fits inside
-     * the picture rather than being cut off by its edge.
+     * A 16:9 well is only about 170px tall on a 360px phone. The arms go, the
+     * copy tightens and the controls shrink so that the waiting state — the one
+     * nearly every visitor sees — sits inside the picture. The failure panel's
+     * two buttons still exceed it on the narrowest phones; that is what the
+     * curtain's own scroller is for.
      */
     .veil { padding: 0.9rem; }
     .veil__arms { display: none; }

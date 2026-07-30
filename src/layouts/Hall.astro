@@ -90,7 +90,11 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
 
     <!-- Focusable, or the skip link only scrolls and leaves focus in the beam —
          which is no use to the one person who pressed it. -->
-    <main id="main" tabindex="-1" class={wide ? '' : 'hall'}>
+    {/* class:list rather than a ternary. Astro appends its scope hash to
+        whatever the expression yields, so a bare `undefined` ships as a literal
+        class the day a page first passes wide. Written in a JSX comment because
+        an HTML comment would be emitted onto every page in the site. */}
+    <main id="main" tabindex="-1" class:list={[!wide && 'hall']}>
       <slot />
     </main>
 
@@ -175,10 +179,11 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
        * down in size and weight from the wordmark keeps the hierarchy.
        *
        * Colours are solid rather than vellum-at-an-alpha: the candle gradients
-       * under the beam lift the local ground from L=0.014 to L=0.045, which
-       * costs about a third of the available contrast, and only a fixed value
-       * can be measured against the lit patch instead of the flat timber.
-       * #d9cbae is 6.9:1 there, #c7b795 is 5.6:1 — both clear AA at these sizes.
+       * under the beam lift the ground from L=0.014 on bare timber to L=0.048
+       * at the core of the pool, which costs about a third of the available
+       * contrast — so each value is measured against that lit patch and not
+       * against the timber. There: #d9cbae 6.7:1, --brass-lit (current page)
+       * 7.1:1, #c7b795 (the out-link, smallest text on the beam) 5.5:1.
        */
       .nav { display: flex; align-items: center; gap: clamp(0.7rem, 2vw, 1.7rem); flex-wrap: wrap; }
       .nav__link {
@@ -239,9 +244,14 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
       }
       .skip:focus-visible {
         transform: translate(-50%, 0);
-        /* Inside the plate: a brass ring on brass would be invisible. */
+        /* Inside the plate: a brass ring on brass would be invisible. The ink
+           is 5.5:1 on the darkest end of the gradient. */
         outline: 2px solid #2a1c08;
         outline-offset: -6px;
+        /* Restated because the global focus ring paints its dark backing with
+           box-shadow, and this plate's own lift would otherwise be replaced by
+           it on whichever sheet happens to come last. */
+        box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.9);
       }
 
       /* The oath, on parchment nailed to the wall at the end of the hall. */
@@ -281,6 +291,17 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
         .nav { gap: clamp(0.6rem, 1.7vw, 1.1rem); }
         .nav__link { font-size: 0.73rem; letter-spacing: 0.09em; }
         .nav__link--out { font-size: 0.65rem; letter-spacing: 0.11em; }
+      }
+      /* The last stretch before the beam stacks is where the row is tightest —
+         at 780px the wordmark and four way-signs are within a few pixels of
+         wrapping the nav to a second line against a single-line brand. The
+         wordmark gives up the space, since it is the one item here that is
+         still legible a size down. */
+      @media (max-width: 880px) {
+        .brand__word { font-size: 0.95rem; letter-spacing: 0.15em; }
+        .nav { gap: 0.62rem; }
+        .nav__link { font-size: 0.7rem; letter-spacing: 0.07em; }
+        .nav__link--out { font-size: 0.63rem; letter-spacing: 0.09em; }
       }
       @media (max-width: 760px) {
         .topbar__in {
