@@ -1,5 +1,5 @@
 ---
-name: Malik Amine
+name: malik
 title: Builds things after hours
 joined: 2026-07-24
 links:

@@ -86,7 +86,11 @@ const toGo = !next
       </div>
 
       <div class="charter__text">
-        <p class="mark">@{creator.id}</p>
+        {/* A member who goes by their handle would otherwise be announced twice
+            over — "@malik" and then "malik" underneath it, in two faces. */}
+        {d.name.toLowerCase() !== creator.id.toLowerCase() && (
+          <p class="mark">@{creator.id}</p>
+        )}
         <h1>{d.name}</h1>
         {d.title && <p class="charter__role">{d.title}</p>}
         {d.bio && <p class="lede">{d.bio}</p>}
