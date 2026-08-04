@@ -297,7 +297,10 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
          wrapping the nav to a second line against a single-line brand. The
          wordmark gives up the space, since it is the one item here that is
          still legible a size down. */
-      @media (max-width: 880px) {
+      /* Bounded at the bottom as well as the top: below 760px the beam stacks,
+         the brand gets a row to itself and the pressure this relieves is gone —
+         so the shrink was still applying on phones for no reason. */
+      @media (max-width: 880px) and (min-width: 761px) {
         .brand__word { font-size: 0.95rem; letter-spacing: 0.15em; }
         .nav { gap: 0.62rem; }
         .nav__link { font-size: 0.7rem; letter-spacing: 0.07em; }

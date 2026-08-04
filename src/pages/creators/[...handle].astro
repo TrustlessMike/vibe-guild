@@ -168,7 +168,6 @@ const toGo = !next
   /* Spacing is the column's business now, and a paragraph's own trailing margin
      would compound with the gap rather than collapse into it. */
   .charter__text p { margin-bottom: 0; }
-  .charter__text .links { margin-top: auto; padding-top: 0.5rem; }
   /* A name is submitted content and can be one unbroken word longer than the
      column; it has to break rather than run off the edge of the parchment. */
   .charter h1 { overflow-wrap: break-word; }
@@ -274,6 +273,11 @@ const toGo = !next
   }
 
   .links { list-style: none; display: flex; flex-wrap: wrap; gap: 0.45rem; padding: 0; margin: 1.1rem 0 0; }
+  /* Sits here rather than 100 lines up, where it beat this rule on specificity
+     and left the 1.1rem above permanently inert — correct, but it read as a
+     value someone could safely change. In the charter the links are pushed to
+     the foot of the column instead. */
+  .charter__text .links { margin-top: auto; padding-top: 0.5rem; }
   /* Chips on parchment need ink, not brass. */
   .charter .chip {
     border-color: rgba(122, 88, 44, 0.42);
