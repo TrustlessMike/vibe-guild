@@ -38,19 +38,19 @@ const roll = rungs
     members: roster.filter((m) => rankFor(m.n) === rank),
     // "From", because the gate and a member's own tally are otherwise the same
     // words at the bottom of the ladder and the reader cannot tell which is which.
-    gate: at === 0 ? 'Yet to post' : `From ${at} commission${at === 1 ? '' : 's'}`,
+    gate: at === 0 ? 'Yet to post' : `From ${at} project${at === 1 ? '' : 's'}`,
   }))
   .filter((g) => g.members.length > 0)
   .reverse();
 ---
 
-<Hall title="The Roster">
+<Hall title="Members">
   <section class="masthead rise">
-    <p class="mark">Everyone who has posted to the board</p>
-    <h1>The Roster</h1>
+    <p class="mark">Everyone who has posted a project</p>
+    <h1>Members</h1>
     <p class="lede">
-      Rank is earned by posting, not granted. Every member's arms are generated
-      from their handle — no two are alike, and nobody has to draw anything.
+      Rank is earned by posting, not given out. Every member's crest is drawn
+      from their username — no two are alike, and nobody has to make one.
     </p>
   </section>
 
@@ -74,7 +74,7 @@ const roll = rungs
                 <div class="plaque__who">
                   <strong>{c.data.name}</strong>
                   {c.data.title && <span class="plaque__role">{c.data.title}</span>}
-                  <span class="mark plaque__tally">{n === 1 ? 'One commission' : `${n} commissions`}</span>
+                  <span class="mark plaque__tally">{n === 1 ? 'One project' : `${n} projects`}</span>
                 </div>
               </a>
             </li>

@@ -7,18 +7,18 @@
 import Hall from '../layouts/Hall.astro';
 ---
 
-<Hall title="Not on the board" description="No such commission.">
+<Hall title="Page not found" description="This page does not exist.">
   <section class="lost">
     <div class="sheet leaf">
       <p class="mark">Notice</p>
-      <h1>No such commission</h1>
+      <h1>Page not found</h1>
       <p>
         Nothing is posted at this address. It may have been taken down, or the
-        board may never have carried it at all.
+        link may be wrong.
       </p>
       <div class="lost__acts">
-        <a class="btn" href="/projects">See the board</a>
-        <a class="btn btn--ghost" href="/">Back to the hall</a>
+        <a class="btn" href="/projects">See all projects</a>
+        <a class="btn btn--ghost" href="/">Back to the home page</a>
       </div>
     </div>
   </section>
@@ -37,7 +37,8 @@ import Hall from '../layouts/Hall.astro';
     transform: rotate(-0.4deg);
   }
   /* The global display size is set for full-width mastheads and runs past the
-     edge of a 34rem sheet — "commission" is one long unbreakable word. */
+     edge of a 34rem sheet. break-word stays as a guard: this heading is short
+     now, but a long unbreakable word here would overflow the sheet. */
   .lost h1 {
     margin: 0.5rem 0 0.9rem;
     font-size: clamp(1.75rem, 5.2vw, 2.5rem);

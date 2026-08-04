@@ -27,7 +27,7 @@ const kinds = [
 /*
  * Filters earn their row only once the board outgrows a glance. Below that the
  * whole board is already on screen, so the chips are furniture — and at one
- * commission every chip in the row resolves to the same single card.
+ * project every chip in the row resolves to the same single card.
  */
 const showFilters = projects.length > 3 && (kinds.length > 2 || tags.length > 1);
 
@@ -41,22 +41,22 @@ const showFilters = projects.length > 3 && (kinds.length > 2 || tags.length > 1)
 const columns = (cells: number) => (cells < 5 ? cells : cells < 7 ? 3 : 4);
 const cols = columns(projects.length + 1);
 
-// One commission is posted as a broadside with the vacancy as a slip beside it:
+// One project is posted as a broadside with the vacancy as a slip beside it:
 // a composition, rather than a card and a hole.
 const solo = projects.length === 1;
 
 const eyebrow =
   projects.length === 0
-    ? 'The board is bare'
+    ? 'Nothing posted yet'
     : solo
-      ? 'One commission, and room for yours'
-      : `${projects.length} commissions · newest first`;
+      ? 'One project, and room for yours'
+      : `${projects.length} projects · newest first`;
 ---
 
-<Hall title="The Board">
+<Hall title="Projects">
   <section class="top rise">
     <p class="mark">{eyebrow}</p>
-    <h1>The Board</h1>
+    <h1>Projects</h1>
     <p class="lede">
       Everything here runs in your browser. Nothing to install, nothing to sign
       up for.
@@ -64,7 +64,7 @@ const eyebrow =
 
     {showFilters && (
       <div class="filters" data-filters>
-        <div class="filters__row" role="group" aria-label="Filter by kind">
+        <div class="filters__row" role="group" aria-label="Filter by type">
           {kinds.map((k) => (
             <button class="chip" type="button" data-kind={k.key} aria-pressed={String(k.key === 'all')}>
               {k.label} · <span class="chip__n" data-n>{k.n}</span>
@@ -91,13 +91,13 @@ const eyebrow =
 
     <!-- An empty slot rather than another notice: bare timber, a hairline where
          a sheet would go and a spare pin already stuck in the board. It has to
-         read as room on the wall, not as a commission. -->
+         read as room on the wall, not as a project. -->
     <a class="vacancy" href="/submit">
       <span class="pin" aria-hidden="true"></span>
-      <span class="vacancy__mark">The board has room</span>
-      <span class="vacancy__act">Post a commission</span>
+      <span class="vacancy__mark">Room for yours</span>
+      <span class="vacancy__act">Submit your work</span>
       <span class="vacancy__note">
-        Two markdown files and a pull request. The Guild takes no cut and no
+        Two markdown files and a pull request on GitHub. We take no cut and no
         rights.
       </span>
     </a>
@@ -106,8 +106,8 @@ const eyebrow =
   {showFilters && (
     <div class="void sheet" data-empty hidden role="status">
       <span class="pin" aria-hidden="true"></span>
-      <p class="void__line">No commission on the board answers to that.</p>
-      <button class="btn" type="button" data-clear>Show every commission</button>
+      <p class="void__line">Nothing here matches that.</p>
+      <button class="btn" type="button" data-clear>Show all projects</button>
     </div>
   )}
 </Hall>
@@ -130,7 +130,7 @@ const eyebrow =
   let kind = 'all';
   let tag = new URLSearchParams(location.search).get('tag');
   // A shared link can name a tag that is no longer on the board; honouring it
-  // would open the hall on an empty one.
+  // would open the page on an empty board.
   if (tag && !tagBtns.some((b) => b.dataset.tag === tag)) tag = null;
 
   const matches = (el: HTMLElement, k: string, t: string | null) =>
@@ -208,7 +208,7 @@ const eyebrow =
   .filters__row .chip { cursor: pointer; font-family: var(--mark); }
   /* A chip that cannot change anything says so instead of waiting to
      disappoint; the count beside it is the explanation. Held deliberately below
-     the contrast the rest of the hall keeps — an inactive control carries no
+     the contrast the rest of the site keeps — an inactive control carries no
      contrast requirement, and has to look inactive. */
   .filters__row .chip:disabled {
     opacity: 0.5;
@@ -221,7 +221,7 @@ const eyebrow =
 
   /*
    * The board's columns follow the number of cards on it, not the width of the
-   * hall. Tracks are as wide as an even division of the row and never narrower
+   * page. Tracks are as wide as an even division of the row and never narrower
    * than the 276px the wall has always used, so a phone still collapses to one
    * column without a breakpoint of its own.
    */
@@ -238,8 +238,8 @@ const eyebrow =
     );
   }
 
-  /* One commission: the broadside takes the wall and the vacancy is the slip
-     beside it, so the row ends where the hall ends. */
+  /* One project: the broadside takes the wall and the vacancy is the slip
+     beside it, so the row ends where the page ends. */
   .board.board--solo { grid-template-columns: minmax(0, 1fr); }
   @media (min-width: 900px) {
     .board.board--solo { grid-template-columns: minmax(0, 1.45fr) minmax(0, 0.55fr); }
@@ -290,7 +290,7 @@ const eyebrow =
   }
 
   /* Nothing matched: a slip pinned up in the board's place, since anything you
-     read in this hall is on parchment — and it carries the way out with it. */
+     read on this site is on parchment — and it carries the way out with it. */
   .void {
     max-width: 46ch;
     margin: clamp(1.5rem, 4vw, 2.6rem) auto 0;

@@ -51,38 +51,38 @@ const next = rungs[step + 1];
 
 const tally =
   works.length === 0
-    ? 'Nothing on the board yet'
+    ? 'Nothing posted yet'
     : works.length === 1
-      ? 'One commission on the board'
-      : `${works.length} commissions on the board`;
+      ? 'One project posted'
+      : `${works.length} projects posted`;
 const owed = next ? next.at - works.length : 0;
 const toGo = !next
-  ? 'the top of the roll'
+  ? 'already the top rank'
   : works.length === 0
-    ? `the first earns ${next.rank}`
+    ? `post one to reach ${next.rank}`
     : owed === 1
-      ? `one more earns ${next.rank}`
-      : `${owed} more earn ${next.rank}`;
+      ? `one more to reach ${next.rank}`
+      : `${owed} more to reach ${next.rank}`;
 ---
 
-<Hall title={d.name} description={d.bio ?? `${d.name} of The Vibe Guild`}>
+<Hall title={d.name} description={d.bio ?? `${d.name} on The Vibe Guild`}>
   <article class="member">
     <header class="charter sheet rise">
       <span class="pin" aria-hidden="true"></span>
 
       <!--
-        The crest is decorative here and nowhere else: the blazon under it is now
-        visible text rather than a `title` attribute no keyboard or touch user
-        could reach, so labelling the shield as well would read the same
+        The crest is decorative here and nowhere else: the description under it
+        is now visible text rather than a `title` attribute no keyboard or touch
+        user could reach, so labelling the shield as well would read the same
         sentence out twice.
       -->
       <div class="charter__arms">
         <Crest handle={creator.id} size={184} overrides={d.crest ?? {}} title={false} />
         <dl class="charter__blazon">
-          <dt>Blazon</dt>
+          <dt>What this crest shows</dt>
           <dd>{arms.text}</dd>
         </dl>
-        <a class="charter__how" href="/arms">How these are made →</a>
+        <a class="charter__how" href="/arms">How crests are made →</a>
       </div>
 
       <div class="charter__text">
@@ -125,14 +125,14 @@ const toGo = !next
     <div class="rule"><span></span></div>
 
     <section class="works">
-      <h2>Commissions</h2>
+      <h2>Projects</h2>
       {works.length ? (
         <div class="board" style={`--plates:${Math.min(works.length, 4)}`}>
           {works.map((p: any) => <Notice project={p} />)}
         </div>
       ) : (
         <p class="lede">
-          Nothing on the board yet. <a href="/submit">Post the first one</a>.
+          Nothing posted yet. <a href="/submit">Submit the first one</a>.
         </p>
       )}
     </section>
@@ -289,7 +289,7 @@ const toGo = !next
   .member__scroll { margin: 1.8rem 0 0; max-width: 58rem; transform: rotate(0.25deg); }
 
   /*
-   * A member with one commission had their single notice stretched to the width
+   * A member with one project had their single notice stretched to the width
    * of the hall, where it stopped reading as a card pinned up among others.
    * `auto-fit` looks like the fix and is not: it is the definite track maximum
    * that caps a lone card, and the repetition count is then taken from that

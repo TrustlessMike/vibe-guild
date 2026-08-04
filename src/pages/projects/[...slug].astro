@@ -18,7 +18,7 @@ const authors = await Promise.all(d.by.map((ref: any) => getEntry(ref)));
 /**
  * Submitted work is served from its own origin (see tools/serve-apps.mjs).
  * That is what lets the frame carry `allow-same-origin` safely: "same origin"
- * there means the app's, not the Guild's, so the app keeps its own storage and
+ * there means the app's, not this site's, so the app keeps its own storage and
  * loads its own modules while still being unable to reach anything of ours.
  * With no separate origin configured we fall back to same-origin serving and
  * drop that permission, which is safe but costs the app its storage.
@@ -40,9 +40,9 @@ const sandbox = [
   ...(isolated || d.play.url ? ['allow-same-origin'] : []),
 ].join(' ');
 /**
- * Whether the work is reachable somewhere other than the Guild's own origin,
+ * Whether the work is reachable somewhere other than this site's own origin,
  * which is the condition for offering to open it top-level. In the same-origin
- * dev fallback that offer would hand a submission the Guild's own storage and
+ * dev fallback that offer would hand a submission this site's own storage and
  * service-worker scope — the very thing the two-origin split exists to prevent.
  */
 const offSite = isolated || !!d.play.url;
@@ -50,8 +50,9 @@ const posted = d.posted.toLocaleDateString('en-GB', {
   day: 'numeric', month: 'long', year: 'numeric',
 });
 // Licences are given as identifiers ("MIT", "Apache-2.0"), which read as an
-// unlabelled code beside a Source button unless the word is said out loud.
-const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licence`;
+// unlabelled code beside a code link unless something says what they are. The
+// label does that now, so a value carrying the word as well would say it twice.
+const licence = d.license.replace(/\s*licen[cs]e\s*$/i, '');
 ---
 
 <Hall title={d.title} description={d.tagline}>
@@ -81,8 +82,8 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
             ))}
           </div>
         )}
-        <p class="fact"><span class="mark">Terms</span><span class="fact__v">{licence}</span></p>
-        {d.source && <a class="btn btn--ghost" href={d.source}>Read the source ↗</a>}
+        <p class="fact"><span class="mark">Licence</span><span class="fact__v">{licence}</span></p>
+        {d.source && <a class="btn btn--ghost" href={d.source}>See the code ↗</a>}
       </div>
     </header>
 
@@ -97,8 +98,8 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
     <figure class="stage frame" style={`--aspect:${d.play.aspect}`} data-stage>
       {d.play.desktopOnly && (
         <p class="stage__note">
-          <span class="mark">Wants a desk</span>
-          Keyboard and mouse required — this one will load below, but it needs a computer to play.
+          <span class="mark">Needs a keyboard</span>
+          This one still loads below, but you need a computer with a keyboard and mouse to play it.
         </p>
       )}
 
@@ -121,29 +122,30 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
 
         <!--
           The frame is a black rectangle until the submission's own first paint,
-          which for a multi-megabyte build is seconds of nothing. This stands in
-          front of it until then. It is raised by the script below and by nothing
-          else, so with JS off it never appears and the frame is simply itself.
+          which for a multi-megabyte build is seconds of nothing. This cover
+          stands in front of it until then. It is shown by the script below and
+          by nothing else, so with JS off it never appears and the frame is
+          simply itself.
         -->
         <div class="veil" role="status">
           <div class="veil__wait">
             <div class="veil__arms" aria-hidden="true">
               <Crest handle={authors[0].id} size={58} title={false} />
             </div>
-            <p class="mark">Raising the curtain</p>
+            <p class="mark">Loading</p>
             <p class="veil__say">
-              {d.title} is coming up in its frame. The whole build is fetched on
-              first open, so give it a moment.
+              {d.title} is starting up. The whole thing is downloaded the first
+              time you open it, so give it a moment.
             </p>
             <div class="veil__bar" aria-hidden="true"><span></span></div>
-            <p class="veil__slow">Still coming — a large build takes a while on a slow line.</p>
+            <p class="veil__slow">Still going — a big project takes a while on a slow connection.</p>
           </div>
 
           <div class="veil__fail">
-            <p class="mark veil__cue--bad">The curtain did not rise</p>
+            <p class="mark veil__cue--bad">This did not load</p>
             <p class="veil__say">
-              Nothing has arrived. The work may be offline, or this browser may
-              be blocking the frame.
+              Nothing arrived. The project may be offline, or your browser may
+              be blocking it.
             </p>
             <div class="veil__acts">
               <button class="btn btn--ghost" type="button" data-retry>Try again</button>
@@ -171,18 +173,18 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
             <>
               <span class="mark vouch__cue">Safe to play</span>
               <span class="vouch__say">
-                A stranger's code runs here, and the Guild treats it that way: it
-                is served from its own origin inside a locked frame, so it cannot
-                reach this page, the Guild, or you.
+                Someone else's code runs here, so we keep it boxed in. It loads
+                from a separate web address of its own and is locked inside this
+                frame, so it cannot reach this page, the rest of the site, or you.
               </span>
             </>
           ) : (
             <>
-              <span class="mark vouch__cue">Not yet split off</span>
+              <span class="mark vouch__cue">Not split off yet</span>
               <span class="vouch__say">
-                This copy is served from the Guild's own origin. Run
-                <code>npm run apps</code> to give submissions the separate origin
-                they get in the hall.
+                This copy is served from the site's own web address. Run
+                <code>npm run apps</code> to give projects the separate address
+                they get on the live site.
               </span>
             </>
           )}
@@ -230,7 +232,7 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
         frame.addEventListener('error', () => { stop(); set('failed'); });
 
         /*
-         * A frame that already arrived is never put behind the curtain: the
+         * A frame that already arrived is never put behind the cover: the
          * `onload` mark on the element catches the load this script was too
          * late to hear, which otherwise ends with a failure panel standing over
          * a working game.
@@ -258,7 +260,7 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
              * Set, never cleared first. Removing the attribute is not a neutral
              * reset: it navigates the frame to about:blank, and that navigation
              * fires a `load` this would read as the submission having arrived,
-             * raising the curtain on an empty frame. Setting `src` is itself
+             * clearing the cover off an empty frame. Setting `src` is itself
              * what re-runs the frame's navigation, same value or not.
              */
             frame.setAttribute('src', src);
@@ -432,7 +434,7 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
     .stage__note { display: block; }
   }
 
-  /* --- the curtain over an unloaded submission --------------------------- */
+  /* --- the cover over a submission that has not loaded ------------------- */
 
   .veil {
     position: absolute;
@@ -456,8 +458,8 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
     background:
       radial-gradient(120% 100% at 50% 0%, rgba(255, 198, 112, 0.1), transparent 62%),
       linear-gradient(180deg, #16100a, #070503);
-    /* Hidden until the script raises it, so a JS-less visitor is never left
-       staring at a curtain nothing can lift. */
+    /* Hidden until the script shows it, so a JS-less visitor is never left
+       staring at a cover nothing can lift. */
     opacity: 0;
     visibility: hidden;
     transition: opacity 380ms ease, visibility 380ms;
@@ -581,7 +583,7 @@ const licence = /licen[cs]e/i.test(d.license) ? d.license : `${d.license} licenc
      * copy tightens and the controls shrink so that the waiting state — the one
      * nearly every visitor sees — sits inside the picture. The failure panel's
      * two buttons still exceed it on the narrowest phones; that is what the
-     * curtain's own scroller is for.
+     * cover's own scroller is for.
      */
     .veil { padding: 0.9rem; }
     .veil__arms { display: none; }

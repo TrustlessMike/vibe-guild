@@ -22,25 +22,25 @@ const roster = creators
   .slice(0, 6);
 ---
 
-<Hall title="A hall for people who make things">
+<Hall title="A site for people who make things">
   <section class="hero">
     <div class="hero__charter sheet rise">
       <span class="pin" aria-hidden="true"></span>
-      <p class="mark">Est. by whoever showed up first</p>
+      <p class="mark">Started by whoever showed up first</p>
       <h1>The <span class="hero__accent">Vibe</span> Guild</h1>
       <p class="lede">
-        A hall for people who make things. Members post their games and apps to
-        the board, and anyone can play them right here — no store, no launcher,
-        no account.
+        A site for people who make things. Members post their games and apps,
+        and anyone can play them right here in the page — no app store, no
+        install, no account.
       </p>
       <div class="hero__acts">
-        <a class="btn" href="/projects">Enter the hall</a>
-        <a class="btn btn--ghost" href="/submit">Post a commission</a>
+        <a class="btn" href="/projects">See the projects</a>
+        <a class="btn btn--ghost" href="/submit">Submit your work</a>
       </div>
       <dl class="tally">
-        <div><dt class="mark">Commissions</dt><dd>{projects.length}</dd></div>
+        <div><dt class="mark">Projects</dt><dd>{projects.length}</dd></div>
         <div><dt class="mark">Members</dt><dd>{creators.length}</dd></div>
-        <div><dt class="mark">Cut taken</dt><dd>0%</dd></div>
+        <div><dt class="mark">Our cut</dt><dd>0%</dd></div>
       </dl>
     </div>
 
@@ -67,15 +67,15 @@ const roster = creators
 
   <section>
     <header class="sec">
-      <h2>On the board</h2>
-      <a class="mark sec__more" href="/projects">See all {projects.length} →</a>
+      <h2>Projects</h2>
+      <a class="mark sec__more" href="/projects">See all projects →</a>
     </header>
     {board.length ? (
       <div class="board">
         {board.map((p) => <Notice project={p} />)}
       </div>
     ) : (
-      <p class="lede">The board is bare. Be the first to pin something to it.</p>
+      <p class="lede">Nothing posted yet. Be the first to add a project.</p>
     )}
   </section>
 
@@ -83,8 +83,8 @@ const roster = creators
 
   <section>
     <header class="sec">
-      <h2>The roster</h2>
-      <a class="mark sec__more" href="/creators">Every member →</a>
+      <h2>Members</h2>
+      <a class="mark sec__more" href="/creators">See all members →</a>
     </header>
     <ul class="roster">
       {roster.map(({ c, n }) => (

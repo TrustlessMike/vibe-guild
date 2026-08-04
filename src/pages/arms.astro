@@ -3,7 +3,7 @@ import Hall from '../layouts/Hall.astro';
 import Crest from '../components/Crest.astro';
 import { CHARGE_NAMES, DIVISIONS, blazon } from '../lib/crest';
 
-// A reference sheet for the generator: enough handles to see the whole range
+// A reference page for the generator: enough usernames to see the whole range
 // at once, so a bad combination has nowhere to hide.
 const sample = [
   'malik', 'ada', 'grim', 'nova', 'pixelwitch', 'orbital', 'runa', 'kestrel',
@@ -13,18 +13,24 @@ const sample = [
 ];
 ---
 
-<Hall title="Arms">
+<Hall title="Crests" description="How every member's crest is made — drawn from their username, with real heraldry rules behind it.">
   <section class="top rise">
-    <p class="mark">Reference sheet</p>
-    <h1>Arms</h1>
+    <p class="mark">Reference</p>
+    <h1>Crests</h1>
     <p class="lede">
-      Every member's coat of arms is generated from their handle alone. The same
-      handle always produces the same arms, and the tincture rule is respected —
-      never metal on metal, nor colour on colour — which is what makes these read
-      as heraldry rather than as random shapes.
+      Every member's crest is drawn from their username alone, so the same
+      username always gives the same crest. Heraldry sorts its eight colours
+      into two families — the metals, gold and silver, and the colours — and
+      never sets one on its own kind. These keep that rule, which is what makes
+      them look like real coats of arms rather than random shapes.
+    </p>
+    <p class="lede">
+      The italic line under each shield is its blazon: the wording heralds have
+      always used to describe a coat of arms. That is generated too, so nobody
+      has to write one.
     </p>
     <p class="mark">
-      {DIVISIONS.length} divisions × {CHARGE_NAMES.length} charges × 8 tinctures
+      {DIVISIONS.length} shield patterns × {CHARGE_NAMES.length} symbols × 8 colours
     </p>
   </section>
 

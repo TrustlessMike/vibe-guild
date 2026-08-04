@@ -9,14 +9,14 @@ interface Props {
 
 const {
   title,
-  description = 'A guild hall for people who make things. Games and apps by independent creators — free, open source, and playable right here.',
+  description = 'A site for people who make things. Games and apps by independent creators — free, open source, and playable right here.',
   wide = false,
 } = Astro.props;
 
 const nav = [
-  { href: '/projects', label: 'The Board' },
-  { href: '/creators', label: 'The Roster' },
-  { href: '/submit', label: 'Post a Commission' },
+  { href: '/projects', label: 'Projects' },
+  { href: '/creators', label: 'Members' },
+  { href: '/submit', label: 'Submit your work' },
 ];
 const path = Astro.url.pathname;
 
@@ -42,7 +42,7 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
     <meta property="og:image" content={ogImage} />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
-    <meta property="og:image:alt" content="The Vibe Guild — a hall for people who make things" />
+    <meta property="og:image:alt" content="The Vibe Guild — a site for people who make things" />
     <!-- Without summary_large_image the card renders as a thumbnail strip. -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={`${title} · The Vibe Guild`} />
@@ -56,7 +56,7 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
   </head>
 
   <body>
-    <a class="skip" href="#main">Skip to the hall</a>
+    <a class="skip" href="#main">Skip to content</a>
     <!-- Watched instead of the scroll position, so the beam's shadow costs no
          scroll handler. -->
     <div class="beam-mark" aria-hidden="true"></div>
@@ -102,11 +102,12 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
       <div class="hall">
         <div class="foot__sheet sheet">
           <span class="pin" aria-hidden="true"></span>
-          <p class="mark">The oath of the hall</p>
+          <p class="mark">What we promise</p>
           <p class="foot__oath">
-            The Guild takes no cut, hosts no adverts and owns nothing you make.
-            Every member and every commission on this board is a file in a public
-            repository — fork it, host your own hall, take the whole thing with you.
+            We take no cut, we run no ads and we own nothing you make. Every
+            member and every project here is a file in a public code repository
+            on GitHub — copy it, run your own version of the site, take the whole
+            thing with you.
           </p>
           <p class="mark foot__licence">Free &amp; open source · MIT</p>
         </div>
@@ -254,10 +255,11 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
         box-shadow: 0 10px 22px -10px rgba(0, 0, 0, 0.9);
       }
 
-      /* The oath, on parchment nailed to the wall at the end of the hall. */
+      /* The promise, on parchment nailed to the wall at the end of the hall.
+         The .foot__oath class keeps its old name: the stylesheet is shared. */
       .foot { margin-top: clamp(4rem, 10vw, 8rem); padding: 0 0 4rem; }
       .foot__sheet {
-        /* The sheet sets the measure, so the oath cannot outrun it: 62ch of
+        /* The sheet sets the measure, so the promise cannot outrun it: 62ch of
            sheet less its padding lands the text at ~57 real characters. */
         max-width: 62ch;
         margin-inline: auto;
@@ -267,7 +269,7 @@ const ogImage = new URL('/og.png', Astro.site ?? 'https://vibe-guild.moneytalkwi
       /*
        * Left-ranged, not centred. Four lines of centred prose gives four
        * different left edges and no entry point for the eye — and this is the
-       * one paragraph on the site that states what the Guild is for, so it is
+       * one paragraph on the site that states what the site is for, so it is
        * set in full ink rather than the softer secondary tone.
        */
       .foot__oath {

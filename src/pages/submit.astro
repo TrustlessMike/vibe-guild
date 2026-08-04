@@ -5,9 +5,9 @@ import Hall from '../layouts/Hall.astro';
 const repo = 'https://github.com/TrustlessMike/vibe-guild';
 
 /**
- * A finished submission to point at, resolved from the board rather than named
- * in a string: a link to an example that has since been taken down is worse
- * than offering no example at all.
+ * A finished submission to point at, resolved from the projects collection
+ * rather than named in a string: a link to an example that has since been
+ * taken down is worse than offering no example at all.
  */
 const exemplar = (await getCollection('projects')).sort(
   (a, b) => Number(b.data.featured) - Number(a.data.featured),
@@ -19,10 +19,10 @@ title: Maker of small strange things   # optional
 joined: 2026-07-24
 location: Anywhere                     # optional
 bio: >
-  A sentence or three. Say whatever you like — the Guild does not
-  prescribe what a profile should contain.
+  A sentence or three. Say whatever you like — there are no rules
+  about what goes in here.
 links:                                 # every url must be https:
-  - { label: GitHub,  url: https://github.com/yourhandle }
+  - { label: GitHub,  url: https://github.com/yourusername }
   - { label: Website, url: https://your.site }
 ---
 
@@ -33,7 +33,7 @@ const projectFile = `---
 title: Your Thing
 kind: game               # or: app
 tagline: One line, under 140 characters.
-by: [yourhandle]         # matches src/content/creators/yourhandle.md
+by: [yourusername]       # matches src/content/creators/yourusername.md
 posted: 2026-07-24
 tags: [three-js, roguelike]
 cover: ../../assets/your-thing/cover.png   # optional
@@ -80,16 +80,16 @@ const paint = (src: string) =>
 ---
 
 <Hall
-  title="Post a Commission"
-  description="How to put your game or app on the Guild's board: fork the hall, add two markdown files, open a pull request. No accounts, no review queue, no cut."
+  title="Submit your work"
+  description="How to put your game or app on this site: copy the repository, add two markdown files, open a pull request. No accounts, no review queue, and we take no cut."
 >
   <section class="masthead rise">
-    <p class="mark">How things get onto the board</p>
-    <h1>Post a Commission</h1>
+    <p class="mark">How work gets onto the site</p>
+    <h1>Submit your work</h1>
     <p class="lede">
-      There is no sign-up, because there are no accounts. The Guild's roster and
-      its board are just files in a public repository — you add yours with a pull
-      request, and when it is merged the hall rebuilds itself.
+      There is no sign-up, because there are no accounts. Every member and every
+      project here is just a file in a public GitHub repository — you add yours,
+      ask for it to be merged, and the site rebuilds itself.
     </p>
     <p class="mark">Five steps · two markdown files · one folder</p>
   </section>
@@ -98,19 +98,20 @@ const paint = (src: string) =>
     <li class="step sheet">
       <span class="pin" aria-hidden="true"></span>
       <div>
-        <h2>Fork the hall</h2>
+        <h2>Take your own copy</h2>
         <p>
-          Take your own copy, then <code>npm install</code> and
-          <code>npm run dev</code> — that raises the hall on <code>:4321</code>
-          and a second server for submissions on <code>:4322</code>.
+          Fork the repository — that is GitHub's word for taking your own copy.
+          Then run <code>npm install</code> and <code>npm run dev</code>, which
+          starts the site on <code>:4321</code> and a second server for submitted
+          work on <code>:4322</code>.
         </p>
         <p>
-          Point the hall at that second server with a one-line
+          Point the site at that second server with a one-line
           <code>.env</code> holding
           <code>PUBLIC_APPS_ORIGIN=http://localhost:4322</code>, and your machine
-          behaves exactly as production does — two origins, sandbox and all.
-          Without it the hall serves submissions itself, which is safe but costs
-          your app the storage explained in step III.
+          behaves exactly as the live site does — two separate addresses, sandbox
+          and all. Without it the site serves submitted work itself, which is
+          safe but costs your app the storage explained in step III.
         </p>
         <a class="btn" href={`${repo}/fork`}>Fork the repository ↗</a>
       </div>
@@ -119,15 +120,15 @@ const paint = (src: string) =>
     <li class="step sheet">
       <span class="pin" aria-hidden="true"></span>
       <div>
-        <h2>Claim your arms</h2>
+        <h2>Claim your crest</h2>
         <p>
-          Add <code>src/content/creators/&lt;yourhandle&gt;.md</code>. The filename
-          is your handle, and it is also the seed for your coat of arms — you get
-          a unique one automatically, so there is no avatar to upload.
+          Add <code>src/content/creators/&lt;yourusername&gt;.md</code>. The filename
+          is your username, and it is also what your crest is drawn from — you
+          get a unique one automatically, so there is no avatar to upload.
         </p>
         <figure class="snippet">
           <figcaption>
-            <span class="snippet__name">src/content/creators/yourhandle.md</span>
+            <span class="snippet__name">src/content/creators/yourusername.md</span>
             <button class="snippet__copy" type="button" aria-live="polite" hidden>
               <span class="snippet__word">Copy</span>
               <span class="visually-hidden">&#160;the creator file</span>
@@ -136,9 +137,9 @@ const paint = (src: string) =>
           <pre tabindex="0" role="region" aria-label="Code sample, scrollable"><code set:html={paint(creatorFile)}></code></pre>
         </figure>
         <p class="after">
-          Rather draw your own? A <code>crest:</code> block with any of
+          Rather design your own? A <code>crest:</code> block with any of
           <code>field</code>, <code>charge</code> or <code>division</code>
-          overrides the generated one; the options are listed in
+          replaces the generated one. The choices are listed in
           <code>src/lib/crest.ts</code>.
         </p>
       </div>
@@ -147,7 +148,7 @@ const paint = (src: string) =>
     <li class="step sheet">
       <span class="pin" aria-hidden="true"></span>
       <div>
-        <h2>Bring the thing itself</h2>
+        <h2>Add the thing itself</h2>
         <p>
           Build your project to static files and commit the output as
           <code>apps/&lt;slug&gt;/</code>, with an <code>index.html</code> at its
@@ -156,25 +157,25 @@ const paint = (src: string) =>
         </p>
 
         <section class="grant">
-          <h3 class="grant__mark">Why your code is trusted to run</h3>
+          <h3 class="grant__mark">Why your code gets real powers</h3>
           <p>
-            Submitted work is served from its own origin — a different host from
-            the hall itself. That single fact is what lets the Guild hand a
-            stranger's code real capabilities instead of a crippled frame:
+            Submitted work is served from its own address, on a different host
+            from the rest of the site. That single fact is what lets us give a
+            stranger's code real powers instead of a crippled frame:
           </p>
           <ul class="rules">
-            <li>Your own <strong>localStorage</strong> and IndexedDB, so saves persist between visits.</li>
+            <li>Your own storage in the browser — <strong>localStorage</strong> and IndexedDB — so saves survive between visits.</li>
             <li>
-              Module scripts, workers and <code>fetch</code> behave normally — the
-              frame carries <strong>allow-same-origin</strong>, and the origin it
-              means is <em>yours</em>.
+              Module scripts, workers and <code>fetch</code> all work normally.
+              The frame carries <strong>allow-same-origin</strong>, and the origin
+              that refers to is <em>yours</em>, not ours.
             </li>
-            <li>Pointer lock, gamepad, autoplay, fullscreen and downloads, all granted.</li>
+            <li>Pointer lock, gamepad, autoplay, fullscreen and downloads are all allowed.</li>
           </ul>
           <p>
-            None of the Guild's own pages live on that origin, so there is
+            None of this site's own pages live at that address, so there is
             nothing there for a submission to reach. That is why your work can go
-            up and run at full strength without anyone reading it line by line
+            up and run at full strength without anyone reading every line of it
             first.
           </p>
         </section>
@@ -182,7 +183,7 @@ const paint = (src: string) =>
         <ul class="rules">
           <li>Keep it under <strong>25&nbsp;MB</strong>. Compress your textures and audio.</li>
           <li>Use <strong>relative paths</strong> — your app is served from a subfolder.</li>
-          <li>It must be yours to publish, and it must not be hostile to whoever runs it.</li>
+          <li>It must be yours to publish, and it must not do anything harmful to whoever runs it.</li>
         </ul>
       </div>
     </li>
@@ -190,7 +191,7 @@ const paint = (src: string) =>
     <li class="step sheet">
       <span class="pin" aria-hidden="true"></span>
       <div>
-        <h2>Pin it to the board</h2>
+        <h2>Add it to Projects</h2>
         <p>Add <code>src/content/projects/&lt;slug&gt;.md</code>:</p>
         <figure class="snippet">
           <figcaption>
@@ -209,13 +210,13 @@ const paint = (src: string) =>
             <span class="snippet__name">…in place of play.bundle</span>
             <button class="snippet__copy" type="button" aria-live="polite" hidden>
               <span class="snippet__word">Copy</span>
-              <span class="visually-hidden">&#160;the hosted-elsewhere play block</span>
+              <span class="visually-hidden">&#160;the play block for work hosted elsewhere</span>
             </button>
           </figcaption>
           <pre tabindex="0" role="region" aria-label="Code sample, scrollable"><code set:html={paint(hostedElsewhere)}></code></pre>
         </figure>
 
-        <h3 class="gates">What the schema insists on</h3>
+        <h3 class="gates">What the build checks</h3>
         <ul class="rules">
           <li>
             <strong>Exactly one</strong> of <code>play.bundle</code> or
@@ -228,8 +229,8 @@ const paint = (src: string) =>
           <li>
             Every URL in either file must be <strong>https:</strong>.
             <code>http:</code>, <code>data:</code> and <code>javascript:</code> are
-            refused: a <code>javascript:</code> frame source would inherit the
-            hall's own origin and walk straight out of the sandbox above.
+            refused: a <code>javascript:</code> frame source would run on this
+            site's own address and step straight out of the sandbox above.
           </li>
           <li>
             <code>desktopOnly: true</code> when the work needs a keyboard or a
@@ -237,8 +238,8 @@ const paint = (src: string) =>
             better to say so than to show it a frame it cannot play.
           </li>
           <li>
-            <code>tagline</code> stops at 140 characters, and every handle in
-            <code>by</code> must be a creator file that exists.
+            <code>tagline</code> stops at 140 characters, and every username in
+            <code>by</code> must match a creator file that exists.
           </li>
         </ul>
       </div>
@@ -247,20 +248,22 @@ const paint = (src: string) =>
     <li class="step sheet">
       <span class="pin" aria-hidden="true"></span>
       <div>
-        <h2>Open the pull request</h2>
+        <h2>Open a pull request</h2>
         <p>
-          Run <code>npm run build</code> once first — the schemas are enforced
-          there, so a malformed submission fails on your machine rather than
-          landing broken on the board. If it builds, it works.
+          A pull request asks us to merge your copy back in. Run
+          <code>npm run build</code> once first — the checks above run there, so
+          a broken submission fails on your machine rather than landing broken on
+          the site. If it builds, it works.
         </p>
         <p>
-          That is the whole process. Merged means published. Take it down again
-          whenever you like — it is your work, and the Guild claims no part of it.
+          That is the whole process. Once it is merged, it is published. Take it
+          down again whenever you like — it is your work, and we claim no part
+          of it.
         </p>
         <a class="btn" href={`${repo}/compare`}>Open a pull request ↗</a>
         <p class="also">
           Or read <a href={`${repo}/blob/main/CONTRIBUTING.md`}>the same thing in the repository</a>{exemplar ? ' · ' : ''}
-          {exemplar && <a href={`/projects/${exemplar.id}`}>see a finished commission</a>}.
+          {exemplar && <a href={`/projects/${exemplar.id}`}>see a finished project</a>}.
         </p>
       </div>
     </li>

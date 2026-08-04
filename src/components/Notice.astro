@@ -7,10 +7,10 @@ import { CHARGES, blazon } from '../lib/crest';
 interface Props {
   project: any;
   /**
-   * A hall with one commission is a real state, not a broken one. As a
-   * broadside the single notice is posted at the width of a proclamation —
-   * plate beside text, more of the record on show — rather than left as one
-   * card-sized thing in a grid cut for four.
+   * A site with one project is a real state, not a broken one. As a broadside
+   * the single notice is posted at the width of a proclamation — plate beside
+   * text, more of the record on show — rather than left as one card-sized
+   * thing in a grid cut for four.
    */
   broadside?: boolean;
 }
@@ -89,7 +89,7 @@ const kind = d.kind === 'game' ? 'Game' : 'App';
       )}
       <p class="notice__foot">
         <span>By {authors.join(' & ')}</span>
-        {broadside && <span class="notice__go" aria-hidden="true">Open the commission →</span>}
+        {broadside && <span class="notice__go" aria-hidden="true">Open the project →</span>}
       </p>
     </div>
   </div>
@@ -189,7 +189,7 @@ const kind = d.kind === 'game' ? 'Game' : 'App';
     color: var(--ink-soft);
   }
 
-  /* --- the single commission, posted as a broadside ---------------------- */
+  /* --- a lone project, posted as a broadside ----------------------------- */
 
   /*
    * Both corners are pinned at one inset, and never nearer the edge than the
